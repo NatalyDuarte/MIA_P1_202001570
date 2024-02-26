@@ -1,0 +1,6 @@
+# ejecuta el script
+mkdisk - size=3000 -unit=K
+
+mkdisk -size=10
+
+rmdisk -driveletter=A

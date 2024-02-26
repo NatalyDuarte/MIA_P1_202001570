@@ -9,14 +9,14 @@ import (
 )
 
 func main() {
-	analizar()
+	Analizar()
 }
 
 func mens_error(err error) {
 	fmt.Println("Error: ", err)
 }
 
-func analizar() {
+func Analizar() {
 	finalizar := false
 	fmt.Println(" ===============================================================")
 	fmt.Println("                       Proyecto 1                               ")
@@ -33,13 +33,13 @@ func analizar() {
 			finalizar = true
 		} else {
 			if comando != "" && comando != "exit\n" && comando != "EXIT\n" {
-				split_comando(comando)
+				Split_comando(comando)
 			}
 		}
 	}
 }
 
-func split_comando(comando string) {
+func Split_comando(comando string) {
 	var arre_coman []string
 	comando = strings.Replace(comando, "\n", "", 1)
 	comando = strings.Replace(comando, "\r", "", 1)
@@ -56,25 +56,93 @@ func split_comando(comando string) {
 	}
 
 	if !band_comentario {
-		ejecutar_comando(arre_coman)
+		Ejecutar_comando(arre_coman)
 	}
 }
 
-func ejecutar_comando(arre_coman []string) {
+func Ejecutar_comando(arre_coman []string) {
 	data := strings.ToLower(arre_coman[0])
 
 	if data == "mkdisk" {
 		/*=======================MKDISK================== */
 		comandos.Mkdisk(arre_coman)
-
+	} else if data == "rmdisk" {
+		/*=======================RMDISK================== */
+		comandos.Rmdisk(arre_coman)
+	} else if data == "fdisk" {
+		/*=======================FDISK=================== */
+		comandos.Fdisk(arre_coman)
 	} else if data == "rep" {
 		/*=======================REP===================== */
 		//rep()
 	} else if data == "execute" {
 		/*=======================EXECUTE================= */
-		//execute(arre_coman)
+		Execute(arre_coman)
+	} else if data == "pause" {
+		/*========================PAUSE================== */
+		pause()
 	} else {
 		/*=======================ERROR=================== */
 		fmt.Println("Error: El comando no fue reconocido.")
+	}
+}
+
+func pause() {
+	fmt.Print("[MENSAJE] Presiona enter para continuar...")
+	fmt.Scanln()
+}
+
+func Execute(arre_coman []string) {
+	fmt.Print("==============EXECUTE=======================")
+	val_path := ""
+
+	band_path := false
+	band_error := false
+
+	for i := 1; i < len(arre_coman); i++ {
+		aux_data := strings.SplitAfter(arre_coman[i], "=")
+		data := strings.ToLower(aux_data[0])
+		val_data := aux_data[1]
+
+		switch {
+		case strings.Contains(data, "path="):
+			if band_path {
+				fmt.Println("Error: El parametro -path ya fue ingresado.")
+				band_error = true
+				break
+			}
+
+			band_path = true
+
+			val_path = strings.Replace(val_data, "\"", "", 2)
+		default:
+			fmt.Println("Error: Parametro no valido.")
+		}
+	}
+
+	if !band_error {
+		if band_path {
+			file, err := os.Open(*&val_path)
+			if err != nil {
+				fmt.Println("Error al abrir el archivo:", err)
+				return
+			}
+			defer file.Close()
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if line == "" {
+					continue
+				}
+				if strings.HasPrefix(line, "#") {
+					continue
+				}
+				fmt.Println("\n Comando:", line)
+				Split_comando(line)
+			}
+			if err := scanner.Err(); err != nil {
+				fmt.Println("Error al leer el archivo:", err)
+			}
+		}
 	}
 }

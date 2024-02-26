@@ -23,9 +23,9 @@ func Mens_error(err error) {
 var valorpath string = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1"
 var path string = ""
 var alfabeto []string = []string{
-	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
-	"k", "l", "m", "n", "ñ", "o", "p", "q", "r", "s",
-	"t", "u", "v", "w", "x", "y", "z",
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+	"K", "L", "M", "N", "Ñ", "O", "P", "Q", "R", "S",
+	"T", "U", "V", "W", "X", "Y", "Z",
 }
 var posicion = 0
 
@@ -156,14 +156,12 @@ func Mkdisk(arre_coman []string) {
 				_, err := cmd.Output()
 
 				if err != nil {
-					fmt.Println("Aqu", err)
 					Mens_error(err)
 				}
 
 				disco, err := os.OpenFile(path, os.O_RDWR, 0660)
 
 				if err != nil {
-					fmt.Println("Aqu1", err)
 					Mens_error(err)
 				}
 
@@ -172,7 +170,6 @@ func Mkdisk(arre_coman []string) {
 				newpos, err := disco.Seek(0, os.SEEK_SET)
 
 				if err != nil {
-					fmt.Println("Aqu2", err)
 					Mens_error(err)
 				}
 
@@ -203,7 +200,6 @@ func Crear_disco(ruta string) {
 	aux, err := filepath.Abs(ruta)
 
 	if err != nil {
-		fmt.Println("Aqui", err)
 		Mens_error(err)
 	}
 
@@ -212,7 +208,6 @@ func Crear_disco(ruta string) {
 	_, err1 := cmd1.Output()
 
 	if err1 != nil {
-		fmt.Println("Aqui1", err)
 		Mens_error(err)
 	}
 
@@ -221,7 +216,6 @@ func Crear_disco(ruta string) {
 	_, err2 := cmd2.Output()
 
 	if err2 != nil {
-		fmt.Println("Aqui2", err)
 		Mens_error(err)
 	}
 
