@@ -3,10 +3,15 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"mimodulo/comandos"
+	"mimodulo/estructuras"
 	"os"
+	"strconv"
 	"strings"
 )
+
+var valorpath = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/B.dsk"
 
 func main() {
 	Analizar()
@@ -71,13 +76,20 @@ func Ejecutar_comando(arre_coman []string) {
 		comandos.Rmdisk(arre_coman)
 	} else if data == "fdisk" {
 		/*=======================FDISK=================== */
+		// faltan cosas
 		comandos.Fdisk(arre_coman)
 	} else if data == "rep" {
 		/*=======================REP===================== */
-		//rep()
+		rep()
 	} else if data == "execute" {
 		/*=======================EXECUTE================= */
 		Execute(arre_coman)
+	} else if data == "mkfile" {
+		/*========================PAUSE================== */
+		//pause()
+	} else if data == "mount" {
+		/*========================MOUNT================== */
+		comandos.Mount(arre_coman)
 	} else if data == "pause" {
 		/*========================PAUSE================== */
 		pause()
@@ -145,4 +157,58 @@ func Execute(arre_coman []string) {
 			}
 		}
 	}
+}
+
+/* PARA MIENTRAS */
+func rep() {
+	var empty [100]byte
+	mbr_empty := estructuras.Mbr{}
+	fmt.Println("=================REP===================")
+	// Apertura de archivo
+	disco, err := os.OpenFile(valorpath, os.O_RDWR, 0660)
+
+	// ERROR
+	if err != nil {
+		mens_error(err)
+	}
+
+	// Calculo del tamano de struct en bytes
+	mbr2 := comandos.Struct_a_bytes(mbr_empty)
+	sstruct := len(mbr2)
+
+	// Lectrura del archivo binario desde el inicio
+	lectura := make([]byte, sstruct)
+	_, err = disco.ReadAt(lectura, 0)
+
+	// ERROR
+	if err != nil && err != io.EOF {
+		mens_error(err)
+	}
+
+	// Conversion de bytes a struct
+	mbr := comandos.Bytes_a_struct_mbr(lectura)
+
+	// ERROR
+	if err != nil {
+		mens_error(err)
+	}
+
+	if mbr.Mbr_tamano != empty {
+		fmt.Print("Tamaño: ")
+		fmt.Println(string(mbr.Mbr_tamano[:]))
+		fmt.Print("Fecha: ")
+		fmt.Println(string(mbr.Mbr_fecha_creacion[:]))
+		fmt.Print("Signature: ")
+		fmt.Println(string(mbr.Mbr_dsk_signature[:]))
+		fmt.Print("Fit: ")
+		fmt.Println(string(mbr.Dsk_fit[:]))
+		for i := 0; i < 4; i++ {
+			fmt.Println("Particion " + strconv.Itoa(i))
+			fmt.Print("Type: ")
+			fmt.Println(string(mbr.Mbr_partition[i].Part_type[:]))
+			fmt.Print("Name: ")
+			fmt.Println(string(mbr.Mbr_partition[i].Part_name[:]))
+		}
+	}
+	disco.Close()
 }

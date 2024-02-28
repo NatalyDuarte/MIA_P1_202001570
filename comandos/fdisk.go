@@ -49,7 +49,6 @@ func Fdisk(commandArray []string) {
 			band_size = true
 			aux_size, err := strconv.Atoi(val_data)
 			val_size = aux_size
-			fmt.Println("Size: ", val_size)
 			if err != nil {
 				Mens_error(err)
 				band_error = true
@@ -67,7 +66,6 @@ func Fdisk(commandArray []string) {
 			}
 			band_path = true
 			val_path = valorpathfd + "/" + val_data + ".dsk"
-			fmt.Println("Path: ", val_path)
 		case strings.Contains(data, "name="):
 			if band_name {
 				fmt.Println("Error: El parametro -name ya fue ingresado")
@@ -76,7 +74,6 @@ func Fdisk(commandArray []string) {
 			}
 			band_name = true
 			val_name = strings.Replace(val_data, "\"", "", 2)
-			fmt.Println("Name: ", val_name)
 		case strings.Contains(data, "unit="):
 			if band_unit {
 				fmt.Println("Error: El parametro -unit ya fue ingresado")
@@ -85,7 +82,6 @@ func Fdisk(commandArray []string) {
 			}
 			val_unit = strings.Replace(val_data, "\"", "", 2)
 			val_unit = strings.ToLower(val_unit)
-			fmt.Println("Unit: ", val_unit)
 			if val_unit == "b" || val_unit == "k" || val_unit == "m" {
 				band_unit = true
 			} else {
@@ -101,7 +97,6 @@ func Fdisk(commandArray []string) {
 			}
 			val_type = strings.Replace(val_data, "\"", "", 2)
 			val_type = strings.ToLower(val_type)
-			fmt.Println("Type: ", val_type)
 			if val_type == "p" || val_type == "e" || val_type == "l" {
 				band_type = true
 			} else {
@@ -132,7 +127,6 @@ func Fdisk(commandArray []string) {
 				band_error = true
 				break
 			}
-			fmt.Println("fit: ", val_fit)
 		case strings.Contains(data, "delete="):
 			if band_delete {
 				fmt.Println("Error: El parametro -delete ya fue ingresado")
@@ -163,37 +157,31 @@ func Fdisk(commandArray []string) {
 				Mens_error(err)
 				band_error = true
 			}
+
 		default:
 			fmt.Println("Error: Parametro no valido")
 		}
 	}
-	if !band_error {
-		if band_delete {
-			if band_path {
-				if band_name {
-
-				} else {
-					fmt.Println("Error: El parametro -name no fue ingresado")
-				}
-			} else {
-				fmt.Println("Error: El parametro -driveletter no fue ingresado")
-			}
-		} else {
-			if band_size {
+	pathc := existe_particion(val_path, val_name)
+	if !pathc {
+		if !band_error {
+			if band_delete {
 				if band_path {
 					if band_name {
-						if band_type {
-							if val_type == "p" {
-								// Primaria
-								crear_particion_primaria(val_path, val_name, val_size, val_fit, val_unit)
-							} else if val_type == "e" {
-								// Extendida
-							} else {
-								// Logica
-							}
+
+					} else {
+						fmt.Println("Error: El parametro -name no fue ingresado")
+					}
+				} else {
+					fmt.Println("Error: El parametro -driveletter no fue ingresado")
+				}
+			} else if band_add {
+				if band_path {
+					if band_name {
+						if band_unit {
+
 						} else {
-							// Si no lo indica se tomara como Primaria
-							crear_particion_primaria(val_path, val_name, val_size, val_fit, val_unit)
+							fmt.Println("Error: El parametro -unit no fue ingresado")
 						}
 					} else {
 						fmt.Println("Error: El parametro -name no fue ingresado")
@@ -201,10 +189,39 @@ func Fdisk(commandArray []string) {
 				} else {
 					fmt.Println("Error: El parametro -driveletter no fue ingresado")
 				}
+
 			} else {
-				fmt.Println("Error: El parametro -size no fue ingresado")
+				if band_size {
+					if band_path {
+						if band_name {
+							if band_type {
+								if val_type == "p" {
+									// Primaria
+									crear_particion_primaria(val_path, val_name, val_size, val_fit, val_unit)
+								} else if val_type == "e" {
+									// Extendida
+									crear_particion_extendida(val_path, val_name, val_size, val_fit, val_unit)
+								} else {
+									// Logica
+									crear_particion_logixa()
+								}
+							} else {
+								// Si no lo indica se tomara como Primaria
+								crear_particion_primaria(val_path, val_name, val_size, val_fit, val_unit)
+							}
+						} else {
+							fmt.Println("Error: El parametro -name no fue ingresado")
+						}
+					} else {
+						fmt.Println("Error: El parametro -driveletter no fue ingresado")
+					}
+				} else {
+					fmt.Println("Error: El parametro -size no fue ingresado")
+				}
 			}
 		}
+	} else {
+		fmt.Println("Error: El nombre de la particion ya existe")
 	}
 }
 func crear_particion_primaria(direccion string, nombre string, size int, fit string, unit string) {
@@ -255,6 +272,7 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 			for i := 0; i < 4; i++ {
 				s_part_start = string(master_boot_record.Mbr_partition[i].Part_start[:])
 				s_part_start = strings.Trim(s_part_start, "\x00")
+
 				if s_part_start == "-1" && band_particion == false {
 					band_particion = true
 					num_particion = i
@@ -290,8 +308,32 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 				fmt.Println(num_particion)
 
 				if espacio_disponible >= size_bytes {
-					fmt.Println("Si cumple con el espacio necesario!")
+					fmt.Println("Particion primaria creada con exito")
+					copy(master_boot_record.Mbr_partition[num_particion].Part_status[:], "0")
+					copy(master_boot_record.Mbr_partition[num_particion].Part_type[:], "P")
+					copy(master_boot_record.Mbr_partition[num_particion].Part_fit[:], []byte(fit))
+					copy(master_boot_record.Mbr_partition[num_particion].Part_start[:], []byte(strconv.Itoa(espacio_disponible)))
+					copy(master_boot_record.Mbr_partition[num_particion].Part_size[:], []byte(strconv.Itoa(size_bytes)))
+					copy(master_boot_record.Mbr_partition[num_particion].Part_name[:], []byte(nombre))
+					mbr_byte := Struct_a_bytes(master_boot_record)
+
+					newpos, err := f.Seek(0, os.SEEK_SET)
+
+					if err != nil {
+						Mens_error(err)
+					}
+
+					_, err = f.WriteAt(mbr_byte, newpos)
+
+					if err != nil {
+						Mens_error(err)
+					}
 				}
+
+				if err != nil {
+					Mens_error(err)
+				}
+
 			}
 		}
 		f.Close()
@@ -300,6 +342,184 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 
 func Bytes_a_struct_mbr(s []byte) estructuras.Mbr {
 	p := estructuras.Mbr{}
+	dec := gob.NewDecoder(bytes.NewReader(s))
+	err := dec.Decode(&p)
+
+	// ERROR
+	if err != nil && err != io.EOF {
+		Mens_error(err)
+	}
+
+	return p
+}
+
+func crear_particion_extendida(direccion string, nombre string, size int, fit string, unit string) {
+	aux_unit := ""
+	aux_path := direccion
+	size_bytes := 1024
+	band_er := false
+	mbr_empty := estructuras.Mbr{}
+	var empty [100]byte
+
+	if unit != "" {
+		aux_unit = unit
+		if aux_unit == "b" {
+			size_bytes = size
+		} else if aux_unit == "k" {
+			size_bytes = size * 1024
+		} else {
+			size_bytes = size * 1024 * 1024
+		}
+	} else {
+		size_bytes = size * 1024
+	}
+	f, err := os.OpenFile(aux_path, os.O_RDWR, 0660)
+
+	if err != nil {
+		Mens_error(err)
+	} else {
+		band_particion := false
+		num_particion := 0
+		mbr2 := Struct_a_bytes(mbr_empty)
+		sstruct := len(mbr2)
+		lectura := make([]byte, sstruct)
+		_, err = f.ReadAt(lectura, 0)
+
+		if err != nil && err != io.EOF {
+			Mens_error(err)
+		}
+
+		master_boot_record := Bytes_a_struct_mbr(lectura)
+
+		if err != nil {
+			Mens_error(err)
+		}
+
+		if master_boot_record.Mbr_tamano != empty {
+			s_part_start := ""
+
+			for i := 0; i < 4; i++ {
+				s_part_start = string(master_boot_record.Mbr_partition[i].Part_start[:])
+				s_part_start = strings.Trim(s_part_start, "\x00")
+
+				if s_part_start == "-1" && band_particion == false {
+					band_particion = true
+					num_particion = i
+				}
+			}
+
+			if band_particion {
+				espacio_usado := 0
+				for i := 0; i < 4; i++ {
+					s_size := string(master_boot_record.Mbr_partition[i].Part_size[:])
+					s_size = strings.Trim(s_size, "\x00")
+					i_size, err := strconv.Atoi(s_size)
+
+					if err != nil {
+						Mens_error(err)
+					}
+
+					espacio_usado += i_size
+				}
+
+				s_tamaño_disco := string(master_boot_record.Mbr_tamano[:])
+				s_tamaño_disco = strings.Trim(s_tamaño_disco, "\x00")
+				i_tamaño_disco, err2 := strconv.Atoi(s_tamaño_disco)
+
+				if err2 != nil {
+					Mens_error(err)
+				}
+
+				espacio_disponible := i_tamaño_disco - espacio_usado
+
+				fmt.Println("Espacion disponible: ", espacio_disponible, " Bytes")
+				fmt.Println("Espacio necesario: ", size_bytes, " Bytes")
+				fmt.Println(num_particion)
+
+				if espacio_disponible >= size_bytes {
+					for i := 0; i < 4; i++ {
+						s_part_typ := string(master_boot_record.Mbr_partition[i].Part_type[:])
+						s_part_typ = strings.Trim(s_part_typ, "\x00")
+
+						if s_part_typ == "E" {
+							band_er = true
+						}
+					}
+
+				}
+
+				if band_er {
+					fmt.Println("Error: No se puede crear la particion extendida porque ya existe una")
+				} else {
+					copy(master_boot_record.Mbr_partition[num_particion].Part_status[:], "0")
+					copy(master_boot_record.Mbr_partition[num_particion].Part_type[:], "E")
+					copy(master_boot_record.Mbr_partition[num_particion].Part_fit[:], []byte(fit))
+					copy(master_boot_record.Mbr_partition[num_particion].Part_start[:], []byte(strconv.Itoa(espacio_disponible)))
+					copy(master_boot_record.Mbr_partition[num_particion].Part_size[:], []byte(strconv.Itoa(size_bytes)))
+					copy(master_boot_record.Mbr_partition[num_particion].Part_name[:], []byte(nombre))
+					mbr_byte := Struct_a_bytes(master_boot_record)
+
+					newpos, err := f.Seek(0, os.SEEK_SET)
+
+					if err != nil {
+						Mens_error(err)
+					}
+
+					_, err = f.WriteAt(mbr_byte, newpos)
+
+					if err != nil {
+						Mens_error(err)
+					}
+				}
+
+				if err != nil {
+					Mens_error(err)
+				}
+
+			}
+		}
+		f.Close()
+	}
+}
+func crear_particion_logixa() {
+
+}
+
+func existe_particion(direccion string, nombre string) bool {
+	mbr_empty := estructuras.Mbr{}
+	disco, err := os.OpenFile(direccion, os.O_RDWR, 0660)
+
+	if err != nil {
+		Mens_error(err)
+	}
+
+	mbr2 := Struct_a_bytes(mbr_empty)
+	sstruct := len(mbr2)
+	lectura := make([]byte, sstruct)
+	_, err = disco.ReadAt(lectura, 0)
+
+	if err != nil && err != io.EOF {
+		Mens_error(err)
+	}
+
+	mbr := Bytes_a_struct_mbr(lectura)
+
+	if err != nil {
+		Mens_error(err)
+	}
+	for i := 0; i < 4; i++ {
+		name := string(mbr.Mbr_partition[i].Part_name[:])
+		name = strings.Trim(name, "\x00")
+		if name == nombre {
+			return true
+		}
+	}
+	disco.Close()
+	return false
+}
+
+func Bytes_a_struct_ebr(s []byte) estructuras.Ebr {
+	p := estructuras.Ebr{}
 	dec := gob.NewDecoder(bytes.NewReader(s))
 	err := dec.Decode(&p)
 

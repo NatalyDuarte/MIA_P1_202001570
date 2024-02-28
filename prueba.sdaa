@@ -4,3 +4,7 @@ mkdisk - size=3000 -unit=K
 mkdisk -size=10
 
 rmdisk -driveletter=A
+
+fdisk -size=300 -driveletter=B -name=Particion1
+
+fdisk -type=E -driveletter=B -unit=K -name=Particion2 -size=300

@@ -136,6 +136,12 @@ func Mkdisk(arre_coman []string) {
 
 				copy(master_boot_record.Mbr_dsk_signature[:], strconv.Itoa(int(num_random)))
 
+				if band_fit {
+					copy(master_boot_record.Dsk_fit[:], val_fit)
+				} else {
+					copy(master_boot_record.Dsk_fit[:], "f")
+				}
+
 				if band_unit {
 					if val_unit == "m" {
 						copy(master_boot_record.Mbr_tamano[:], strconv.Itoa(int(val_size*1024*1024)))
@@ -147,6 +153,15 @@ func Mkdisk(arre_coman []string) {
 				} else {
 					copy(master_boot_record.Mbr_tamano[:], strconv.Itoa(int(val_size*1024*1024)))
 					total_size = val_size * 1024
+				}
+
+				for i := 0; i < 4; i++ {
+					copy(master_boot_record.Mbr_partition[i].Part_status[:], "0")
+					copy(master_boot_record.Mbr_partition[i].Part_type[:], "0")
+					copy(master_boot_record.Mbr_partition[i].Part_fit[:], "0")
+					copy(master_boot_record.Mbr_partition[i].Part_start[:], "-1")
+					copy(master_boot_record.Mbr_partition[i].Part_size[:], "0")
+					copy(master_boot_record.Mbr_partition[i].Part_name[:], "")
 				}
 
 				str_total_size := strconv.Itoa(total_size)
