@@ -87,6 +87,7 @@ func Mount(arre_coman []string) {
 
 						// Conversion de bytes a struct
 						mbr := Bytes_a_struct_mbr(lectura)
+						posicion := 0
 
 						// ERROR
 						if err != nil {
@@ -96,15 +97,43 @@ func Mount(arre_coman []string) {
 							for i := 0; i < 4; i++ {
 								name := string(mbr.Mbr_partition[i].Part_name[:])
 								name = strings.Trim(name, "\x00")
+								types := string(mbr.Mbr_partition[i].Part_type[:])
+								types = strings.Trim(types, "\x00")
 								if name == val_name {
-									band_enc = true
+									if types == "p" {
+										band_enc = true
+										posicion = i
+									}
+
 								}
 							}
 
 							if band_enc {
-								fmt.Println("Encontrado")
+								copy(mbr.Mbr_partition[posicion].Part_status[:], "1")
+								// Assuming part_name is a byte slice, create a new, empty byte slice with the same length:
+								emptyPartName := make([]byte, len(mbr.Mbr_partition[posicion].Part_name))
+
+								// Copy the empty slice to part_name, effectively clearing its contents:
+								copy(mbr.Mbr_partition[posicion].Part_name[:], emptyPartName)
+
+								copy(mbr.Mbr_partition[posicion].Part_name[:], []byte(val_driveletter+numerosComoString+termina))
+								mbr_byte := Struct_a_bytes(mbr)
+
+								newpos, err := disco.Seek(0, os.SEEK_SET)
+
+								if err != nil {
+									Mens_error(err)
+								}
+
+								_, err = disco.WriteAt(mbr_byte, newpos)
+
+								if err != nil {
+									Mens_error(err)
+								}
+
+								fmt.Println("Particion montada exitosamente")
 							} else {
-								fmt.Println("Error: No existe la particion en el disco")
+								fmt.Println("Error: No existe la particion en el disco o la particion no es primaria")
 							}
 							disco.Close()
 						}

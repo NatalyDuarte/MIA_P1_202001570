@@ -75,3 +75,12 @@ type Cotent = struct {
 type Bloque_archivo = struct {
 	B_content [100]byte
 }
+
+type ListLogica struct {
+	Part_status string
+	Part_fit    string
+	Part_start  string
+	Part_size   string
+	Part_next   string
+	Part_name   string
+}

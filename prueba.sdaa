@@ -8,3 +8,11 @@ rmdisk -driveletter=A
 fdisk -size=300 -driveletter=B -name=Particion1
 
 fdisk -type=E -driveletter=B -unit=K -name=Particion2 -size=300
+
+mount -driveletter=B -name=Particion1
+
+mount -driveletter=B -name=Particion2
+
+mkdisk - size=3000 -unit=K
+
+#fdisk -size=1 -type=L -unit=M -fit=bf -driveletter=B -name="Particion3"

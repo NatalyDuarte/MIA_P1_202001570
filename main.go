@@ -163,6 +163,7 @@ func Execute(arre_coman []string) {
 func rep() {
 	var empty [100]byte
 	mbr_empty := estructuras.Mbr{}
+	//ebr_empty := estructuras.Ebr{}
 	fmt.Println("=================REP===================")
 	// Apertura de archivo
 	disco, err := os.OpenFile(valorpath, os.O_RDWR, 0660)
@@ -174,12 +175,16 @@ func rep() {
 
 	// Calculo del tamano de struct en bytes
 	mbr2 := comandos.Struct_a_bytes(mbr_empty)
+	//ebr2 := comandos.Struct_a_bytes(ebr_empty)
 	sstruct := len(mbr2)
+	//srect := len(ebr2)
 
 	// Lectrura del archivo binario desde el inicio
 	lectura := make([]byte, sstruct)
 	_, err = disco.ReadAt(lectura, 0)
 
+	//lect := make([]byte, srect)
+	//_, err = disco.ReadAt(lect, 0)
 	// ERROR
 	if err != nil && err != io.EOF {
 		mens_error(err)
@@ -187,6 +192,7 @@ func rep() {
 
 	// Conversion de bytes a struct
 	mbr := comandos.Bytes_a_struct_mbr(lectura)
+	//ebr := comandos.Bytes_a_struct_ebr(lect)
 
 	// ERROR
 	if err != nil {
@@ -204,11 +210,18 @@ func rep() {
 		fmt.Println(string(mbr.Dsk_fit[:]))
 		for i := 0; i < 4; i++ {
 			fmt.Println("Particion " + strconv.Itoa(i))
+			fmt.Print("Status: ")
+			fmt.Println(string(mbr.Mbr_partition[i].Part_status[:]))
 			fmt.Print("Type: ")
 			fmt.Println(string(mbr.Mbr_partition[i].Part_type[:]))
 			fmt.Print("Name: ")
 			fmt.Println(string(mbr.Mbr_partition[i].Part_name[:]))
+			fmt.Print("Start: ")
+			fmt.Println(string(mbr.Mbr_partition[i].Part_start[:]))
+			fmt.Print("size: ")
+			fmt.Println(string(mbr.Mbr_partition[i].Part_size[:]))
 		}
+
 	}
 	disco.Close()
 }
