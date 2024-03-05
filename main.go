@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"mimodulo/comandos"
 	"mimodulo/estructuras"
 	"os"
@@ -11,7 +10,7 @@ import (
 	"strings"
 )
 
-var valorpath = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/B.dsk"
+var valorpath = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/A.dsk"
 
 func main() {
 	Analizar()
@@ -80,7 +79,7 @@ func Ejecutar_comando(arre_coman []string) {
 		comandos.Fdisk(arre_coman)
 	} else if data == "rep" {
 		/*=======================REP===================== */
-		rep()
+		comandos.Rep(arre_coman)
 	} else if data == "execute" {
 		/*=======================EXECUTE================= */
 		Execute(arre_coman)
@@ -93,6 +92,12 @@ func Ejecutar_comando(arre_coman []string) {
 	} else if data == "pause" {
 		/*========================PAUSE================== */
 		pause()
+	} else if data == "unmount" {
+		/*========================PAUSE================== */
+		comandos.Unmount(arre_coman)
+	} else if data == "mkfs" {
+		/*========================PAUSE================== */
+		comandos.Mkfs(arre_coman)
 	} else {
 		/*=======================ERROR=================== */
 		fmt.Println("Error: El comando no fue reconocido.")
@@ -159,69 +164,120 @@ func Execute(arre_coman []string) {
 	}
 }
 
-/* PARA MIENTRAS */
 func rep() {
-	var empty [100]byte
+	extendida := -1
 	mbr_empty := estructuras.Mbr{}
-	//ebr_empty := estructuras.Ebr{}
-	fmt.Println("=================REP===================")
-	// Apertura de archivo
-	disco, err := os.OpenFile(valorpath, os.O_RDWR, 0660)
+	ebr_empty := estructuras.Ebr{}
+	var empty [100]byte
+	fin := false
 
-	// ERROR
-	if err != nil {
-		mens_error(err)
-	}
+	f, err := os.OpenFile(valorpath, os.O_RDWR, 0660)
 
-	// Calculo del tamano de struct en bytes
-	mbr2 := comandos.Struct_a_bytes(mbr_empty)
-	//ebr2 := comandos.Struct_a_bytes(ebr_empty)
-	sstruct := len(mbr2)
-	//srect := len(ebr2)
+	if err == nil {
+		mbr2 := comandos.Struct_a_bytes(mbr_empty)
+		sstruct := len(mbr2)
 
-	// Lectrura del archivo binario desde el inicio
-	lectura := make([]byte, sstruct)
-	_, err = disco.ReadAt(lectura, 0)
+		lectura := make([]byte, sstruct)
+		f.Seek(0, os.SEEK_SET)
+		f.Read(lectura)
 
-	//lect := make([]byte, srect)
-	//_, err = disco.ReadAt(lect, 0)
-	// ERROR
-	if err != nil && err != io.EOF {
-		mens_error(err)
-	}
+		master_boot_record := comandos.Bytes_a_struct_mbr(lectura)
 
-	// Conversion de bytes a struct
-	mbr := comandos.Bytes_a_struct_mbr(lectura)
-	//ebr := comandos.Bytes_a_struct_ebr(lect)
+		if master_boot_record.Mbr_tamano != empty {
+			s_part_name := ""
+			s_part_type := ""
+			fmt.Print("Tamaño: ")
+			fmt.Println(string(master_boot_record.Mbr_tamano[:]))
+			fmt.Print("Fecha: ")
+			fmt.Println(string(master_boot_record.Mbr_fecha_creacion[:]))
+			fmt.Print("Signature: ")
+			fmt.Println(string(master_boot_record.Mbr_dsk_signature[:]))
+			fmt.Print("Fit: ")
+			fmt.Println(string(master_boot_record.Dsk_fit[:]))
+			for i := 0; i < 4; i++ {
+				fmt.Println("--------------------------------Particion " + strconv.Itoa(i) + "-----------------------------------")
+				fmt.Print("Status: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_status[:]))
+				fmt.Print("Type: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_type[:]))
+				fmt.Print("Name: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_name[:]))
+				fmt.Print("Start: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_start[:]))
+				fmt.Print("size: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_size[:]))
+				fmt.Print("correlativo: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_correlative[:]))
+				fmt.Print("id: ")
+				fmt.Println(string(master_boot_record.Mbr_partition[i].Part_id[:]))
 
-	// ERROR
-	if err != nil {
-		mens_error(err)
-	}
+				s_part_type = string(master_boot_record.Mbr_partition[i].Part_type[:])
+				s_part_type = strings.Trim(s_part_type, "\x00")
 
-	if mbr.Mbr_tamano != empty {
-		fmt.Print("Tamaño: ")
-		fmt.Println(string(mbr.Mbr_tamano[:]))
-		fmt.Print("Fecha: ")
-		fmt.Println(string(mbr.Mbr_fecha_creacion[:]))
-		fmt.Print("Signature: ")
-		fmt.Println(string(mbr.Mbr_dsk_signature[:]))
-		fmt.Print("Fit: ")
-		fmt.Println(string(mbr.Dsk_fit[:]))
-		for i := 0; i < 4; i++ {
-			fmt.Println("Particion " + strconv.Itoa(i))
-			fmt.Print("Status: ")
-			fmt.Println(string(mbr.Mbr_partition[i].Part_status[:]))
-			fmt.Print("Type: ")
-			fmt.Println(string(mbr.Mbr_partition[i].Part_type[:]))
-			fmt.Print("Name: ")
-			fmt.Println(string(mbr.Mbr_partition[i].Part_name[:]))
-			fmt.Print("Start: ")
-			fmt.Println(string(mbr.Mbr_partition[i].Part_start[:]))
-			fmt.Print("size: ")
-			fmt.Println(string(mbr.Mbr_partition[i].Part_size[:]))
+				if s_part_type == "e" {
+					extendida = i
+				}
+			}
+
+			if extendida != -1 {
+				s_part_start := string(master_boot_record.Mbr_partition[extendida].Part_start[:])
+				s_part_start = strings.Trim(s_part_start, "\x00")
+				i_part_start, _ := strconv.Atoi(s_part_start)
+
+				s_part_size := string(master_boot_record.Mbr_partition[extendida].Part_size[:])
+				s_part_size = strings.Trim(s_part_size, "\x00")
+				i_part_size, _ := strconv.Atoi(s_part_size)
+
+				f.Seek(int64(i_part_start), os.SEEK_SET)
+
+				ebr2 := comandos.Struct_a_bytes(ebr_empty)
+				sstruct := len(ebr2)
+
+				for !fin {
+					lectura := make([]byte, sstruct)
+					n_leidos, _ := f.Read(lectura)
+
+					pos_actual, _ := f.Seek(0, os.SEEK_CUR)
+
+					if n_leidos == 0 && (pos_actual >= int64(i_part_size+i_part_start)) {
+						fin = true
+						break
+					}
+
+					extended_boot_record := comandos.Bytes_a_struct_ebr(lectura)
+					sstruct = len(lectura)
+
+					if extended_boot_record.Part_size == empty {
+						fin = true
+						break
+					} else {
+						s_part_name = string(extended_boot_record.Part_name[:])
+						s_part_name = strings.Trim(s_part_name, "\x00")
+						fmt.Println("========LOGICAS========")
+						fmt.Print("Status: ")
+						fmt.Println(string(extended_boot_record.Part_status[:]))
+						fmt.Print("Name: ")
+						fmt.Println(string(extended_boot_record.Part_name[:]))
+						fmt.Print("Start: ")
+						fmt.Println(string(extended_boot_record.Part_start[:]))
+						fmt.Print("size: ")
+						fmt.Println(string(extended_boot_record.Part_size[:]))
+
+						s_part_next := string(extended_boot_record.Part_next[:])
+						s_part_next = strings.Trim(s_part_next, "\x00")
+
+						if s_part_next != "-1" {
+							f.Close()
+
+						}
+					}
+				}
+			}
+		} else {
+			fmt.Println("[ERROR] el disco se encuentra vacio...")
 		}
-
 	}
-	disco.Close()
+
+	f.Close()
+
 }

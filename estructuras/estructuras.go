@@ -15,12 +15,14 @@ type Mkdisk struct {
 }
 
 type Partition = struct {
-	Part_status [100]byte
-	Part_type   [100]byte
-	Part_fit    [100]byte
-	Part_start  [100]byte
-	Part_size   [100]byte
-	Part_name   [100]byte
+	Part_status      [100]byte
+	Part_type        [100]byte
+	Part_fit         [100]byte
+	Part_start       [100]byte
+	Part_size        [100]byte
+	Part_name        [100]byte
+	Part_correlative [100]byte
+	Part_id          [100]byte
 }
 
 type Ebr = struct {

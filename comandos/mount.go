@@ -67,29 +67,22 @@ func Mount(arre_coman []string) {
 						mbr_empty := estructuras.Mbr{}
 						disco, err := os.OpenFile(val_path, os.O_RDWR, 0660)
 
-						// ERROR
 						if err != nil {
 							Mens_error(err)
 						}
-
-						// Calculo del tamano de struct en bytes
 						mbr2 := Struct_a_bytes(mbr_empty)
 						sstruct := len(mbr2)
 
-						// Lectrura del archivo binario desde el inicio
 						lectura := make([]byte, sstruct)
 						_, err = disco.ReadAt(lectura, 0)
 
-						// ERROR
 						if err != nil && err != io.EOF {
 							Mens_error(err)
 						}
 
-						// Conversion de bytes a struct
 						mbr := Bytes_a_struct_mbr(lectura)
 						posicion := 0
 
-						// ERROR
 						if err != nil {
 							Mens_error(err)
 						}
@@ -110,13 +103,10 @@ func Mount(arre_coman []string) {
 
 							if band_enc {
 								copy(mbr.Mbr_partition[posicion].Part_status[:], "1")
-								// Assuming part_name is a byte slice, create a new, empty byte slice with the same length:
-								emptyPartName := make([]byte, len(mbr.Mbr_partition[posicion].Part_name))
+								//emptyPartName := make([]byte, len(mbr.Mbr_partition[posicion].Part_name))
+								//copy(mbr.Mbr_partition[posicion].Part_name[:], emptyPartName)
 
-								// Copy the empty slice to part_name, effectively clearing its contents:
-								copy(mbr.Mbr_partition[posicion].Part_name[:], emptyPartName)
-
-								copy(mbr.Mbr_partition[posicion].Part_name[:], []byte(val_driveletter+numerosComoString+termina))
+								copy(mbr.Mbr_partition[posicion].Part_id[:], []byte(val_driveletter+numerosComoString+termina))
 								mbr_byte := Struct_a_bytes(mbr)
 
 								newpos, err := disco.Seek(0, os.SEEK_SET)
@@ -137,7 +127,6 @@ func Mount(arre_coman []string) {
 							}
 							disco.Close()
 						}
-						disco.Close()
 					} else {
 						fmt.Println("Error: El archivo no existe.")
 					}

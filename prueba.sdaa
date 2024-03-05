@@ -1,18 +1,8 @@
 # ejecuta el script
 mkdisk - size=3000 -unit=K
 
-mkdisk -size=10
-
-rmdisk -driveletter=A
-
-fdisk -size=300 -driveletter=B -name=Particion1
-
-fdisk -type=E -driveletter=B -unit=K -name=Particion2 -size=300
-
-mount -driveletter=B -name=Particion1
-
-mount -driveletter=B -name=Particion2
-
-mkdisk - size=3000 -unit=K
-
-#fdisk -size=1 -type=L -unit=M -fit=bf -driveletter=B -name="Particion3"
+fdisk -size=300 -driveletter=A -name=Particion1
+fdisk -type=E -driveletter=A -unit=K -name=Particion2 -size=300
+fdisk -size=1 -type=L -unit=B -fit=bf -driveletter=A -name="Particion3"
+mount -driveletter=A -name=Particion1
+rep -id=A -path=/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/reports/reporte1.jpg -name=mbr
