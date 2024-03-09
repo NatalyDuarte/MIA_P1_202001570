@@ -2,7 +2,11 @@
 mkdisk - size=3000 -unit=K
 
 fdisk -size=300 -driveletter=A -name=Particion1
-fdisk -type=E -driveletter=A -unit=K -name=Particion2 -size=300
-fdisk -size=1 -type=L -unit=B -fit=bf -driveletter=A -name="Particion3"
-mount -driveletter=A -name=Particion1
+fdisk -size=300 -driveletter=A -name=Particion2
+fdisk -size=300 -driveletter=A -name=Particion3
+# fdisk -type=E -driveletter=A -unit=K -name=Particion4 -size=300
+#fdisk -size=800 -type=L -unit=B -fit=bf -driveletter=A -name="Particion5"
+mount -driveletter=A -name=Particion2
+fdisk -name=Particion1 -delete=full -driveletter=A
 rep -id=A -path=/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/reports/reporte1.jpg -name=mbr
+

@@ -61,28 +61,20 @@ func Unmount(arre_coman []string) {
 					mbr_empty := estructuras.Mbr{}
 					disco, err := os.OpenFile(val_path, os.O_RDWR, 0660)
 
-					// ERROR
 					if err != nil {
 						Mens_error(err)
 					}
-
-					// Calculo del tamano de struct en bytes
 					mbr2 := Struct_a_bytes(mbr_empty)
 					sstruct := len(mbr2)
 
-					// Lectrura del archivo binario desde el inicio
 					lectura := make([]byte, sstruct)
 					_, err = disco.ReadAt(lectura, 0)
 
-					// ERROR
 					if err != nil && err != io.EOF {
 						Mens_error(err)
 					}
-
-					// Conversion de bytes a struct
 					mbr := Bytes_a_struct_mbr(lectura)
 
-					// ERROR
 					if err != nil {
 						Mens_error(err)
 					}
