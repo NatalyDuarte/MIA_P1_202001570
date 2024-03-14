@@ -2,6 +2,7 @@ package comandos
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -180,16 +181,9 @@ func Mkdisk(arre_coman []string) {
 					Mens_error(err)
 				}
 
-				mbr_byte := Struct_a_bytes(master_boot_record)
+				disco.Seek(0, os.SEEK_SET)
 
-				newpos, err := disco.Seek(0, os.SEEK_SET)
-
-				if err != nil {
-					Mens_error(err)
-				}
-
-				_, err = disco.WriteAt(mbr_byte, newpos)
-
+				err = binary.Write(disco, binary.BigEndian, master_boot_record)
 				if err != nil {
 					Mens_error(err)
 				}

@@ -4,9 +4,9 @@ label="REPORTE DE MBR"
 tbl[shape=box,label=<
 <table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >
 <tr> <td width='150' bgcolor="pink"><b>Mbr_tamano</b></td><td width='150' bgcolor="pink">3072000</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Mbr_fecha_creacion</b></td><td bgcolor="pink">09/03/2024 21:26:19</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Mbr_dsk_signature</b></td><td bgcolor="pink">87</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Dsk_fit</b></td><td bgcolor="pink">f</td>  </tr><tr><td colspan="2" bgcolor="purple">Particion</td></tr><tr>  <td bgcolor="pink"><b>Part_status</b></td><td bgcolor="pink">1</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Mbr_fecha_creacion</b></td><td bgcolor="pink">14/03/2024 04:13:49</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Mbr_dsk_signature</b></td><td bgcolor="pink">80</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Dsk_fit</b></td><td bgcolor="pink">f</td>  </tr><tr><td colspan="2" bgcolor="purple">Particion</td></tr><tr>  <td bgcolor="pink"><b>Part_status</b></td><td bgcolor="pink">0</td>  </tr>
 <tr>  <td bgcolor="pink"><b>Part_type</b></td><td bgcolor="pink">p</td>  </tr>
 <tr>  <td bgcolor="pink"><b>Part_fit</b></td><td bgcolor="pink">w</td>  </tr>
 <tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">311375</td>  </tr>

@@ -1,8 +1,8 @@
 package comandos
 
 import (
+	"encoding/binary"
 	"fmt"
-	"io"
 	"mimodulo/estructuras"
 	"os"
 	"regexp"
@@ -58,22 +58,14 @@ func Unmount(arre_coman []string) {
 			if band_id {
 				if archivoExiste(val_path) {
 					var empty [100]byte
-					mbr_empty := estructuras.Mbr{}
+					mbr := estructuras.Mbr{}
 					disco, err := os.OpenFile(val_path, os.O_RDWR, 0660)
 
 					if err != nil {
 						Mens_error(err)
 					}
-					mbr2 := Struct_a_bytes(mbr_empty)
-					sstruct := len(mbr2)
-
-					lectura := make([]byte, sstruct)
-					_, err = disco.ReadAt(lectura, 0)
-
-					if err != nil && err != io.EOF {
-						Mens_error(err)
-					}
-					mbr := Bytes_a_struct_mbr(lectura)
+					disco.Seek(0, 0)
+					err = binary.Read(disco, binary.BigEndian, &mbr)
 
 					if err != nil {
 						Mens_error(err)
@@ -95,19 +87,8 @@ func Unmount(arre_coman []string) {
 							emptyPartstat := make([]byte, len(mbr.Mbr_partition[posicion].Part_status))
 							copy(mbr.Mbr_partition[posicion].Part_status[:], emptyPartstat)
 							copy(mbr.Mbr_partition[posicion].Part_status[:], "0")
-							mbr_byte := Struct_a_bytes(mbr)
-
-							newpos, err := disco.Seek(0, os.SEEK_SET)
-
-							if err != nil {
-								Mens_error(err)
-							}
-
-							_, err = disco.WriteAt(mbr_byte, newpos)
-
-							if err != nil {
-								Mens_error(err)
-							}
+							disco.Seek(0, os.SEEK_SET)
+							err = binary.Write(disco, binary.BigEndian, &mbr)
 							fmt.Println("Particion desmontada exitosamente")
 						} else {
 							fmt.Println("Error: No existe la particion en el disco o la particion no es primaria")

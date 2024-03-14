@@ -41,6 +41,7 @@ type Super_bloque = struct {
 	S_free_blocks_count [100]byte
 	S_free_inodes_count [100]byte
 	S_mtime             [100]byte
+	S_umtime            [100]byte
 	S_mnt_count         [100]byte
 	S_magic             [100]byte
 	S_inode_size        [100]byte
@@ -76,13 +77,4 @@ type Cotent = struct {
 
 type Bloque_archivo = struct {
 	B_content [100]byte
-}
-
-type ListLogica struct {
-	Part_status string
-	Part_fit    string
-	Part_start  string
-	Part_size   string
-	Part_next   string
-	Part_name   string
 }

@@ -1,16 +1,14 @@
 package comandos
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"fmt"
-	"io"
 	"mimodulo/estructuras"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 var valorpathfd string = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1"
@@ -25,7 +23,7 @@ func Fdisk(commandArray []string) {
 	val_fit := "w"
 	val_name := ""
 	val_delete := ""
-	val_add := 0
+	val_add := ""
 
 	band_size := false
 	band_unit := false
@@ -152,18 +150,13 @@ func Fdisk(commandArray []string) {
 				break
 			}
 			band_add = true
-			aux_add, err := strconv.Atoi(val_data)
-			val_add = aux_add
-			fmt.Println("Add: ", val_add)
-			if err != nil {
-				Mens_error(err)
-				band_error = true
-			}
+			val_add = val_data
 
 		default:
 			fmt.Println("Error: Parametro no valido")
 		}
 	}
+	fmt.Println(val_add)
 	pathc := existe_particion(val_path, val_name)
 	if pathc {
 		if band_delete {
@@ -189,6 +182,7 @@ func Fdisk(commandArray []string) {
 			if band_path {
 				if band_name {
 					if band_unit {
+						//agregar(val_path, val_name, val_unit, val_add)
 
 					} else {
 						fmt.Println("Error: El parametro -unit no fue ingresado")
@@ -237,6 +231,115 @@ func Fdisk(commandArray []string) {
 		fmt.Println("Error: El nombre de la particion ya existe")
 	}
 }
+
+func existe_particion(direccion string, nombre string) bool {
+
+	master_boot_record := estructuras.Mbr{}
+	var empty [100]byte
+
+	f, err := os.OpenFile(direccion, os.O_RDWR, 0660)
+
+	if err == nil {
+		f.Seek(0, 0)
+		err = binary.Read(f, binary.BigEndian, &master_boot_record)
+
+		if master_boot_record.Mbr_tamano != empty {
+			s_part_name := ""
+			s_part_type := ""
+
+			for i := 0; i < 4; i++ {
+				s_part_name = string(master_boot_record.Mbr_partition[i].Part_name[:])
+				s_part_name = strings.Trim(s_part_name, "\x00")
+				if s_part_name == nombre {
+					f.Close()
+					return true
+				}
+
+				s_part_type = string(master_boot_record.Mbr_partition[i].Part_type[:])
+				s_part_type = strings.Trim(s_part_type, "\x00")
+				if s_part_type == "e" {
+					s_part_start := string(master_boot_record.Mbr_partition[i].Part_start[:])
+					s_part_start = strings.Trim(s_part_start, "\x00")
+					part_start, err := strconv.Atoi(s_part_start)
+					if err != nil {
+						Mens_error(err)
+					}
+					f.Seek(int64(part_start), 0)
+					ebr := estructuras.Ebr{}
+					err = binary.Read(f, binary.BigEndian, &ebr)
+					s_part_ebnext := string(ebr.Part_next[:])
+					s_part_ebnext = strings.Trim(s_part_ebnext, "\x00")
+					if s_part_ebnext == "-1" {
+						fmt.Println("No Hay particiones Logicas")
+					} else {
+						cont := 0
+						f.Seek(int64(part_start), 0)
+						err = binary.Read(f, binary.BigEndian, &ebr)
+						for {
+							s_part_ebnext := string(ebr.Part_next[:])
+							s_part_ebnext = strings.Trim(s_part_ebnext, "\x00")
+							part_startn, err := strconv.Atoi(s_part_ebnext)
+							if err != nil {
+								Mens_error(err)
+							}
+							if s_part_ebnext == "-1" {
+								if s_part_name == nombre {
+									f.Close()
+									return true
+								}
+								break
+							} else {
+								f.Seek(int64(part_startn), 0)
+								err = binary.Read(f, binary.BigEndian, &ebr)
+								cont++
+							}
+							s_part_name := string(ebr.Part_name[:])
+							s_part_name = strings.Trim(s_part_name, "\x00")
+							if s_part_name == nombre {
+								f.Close()
+								return true
+							}
+						}
+					}
+				}
+			}
+		} else {
+			fmt.Println("Error: el disco se encuentra vacio")
+		}
+	} else {
+		Mens_error(err)
+	}
+	defer func() {
+		f.Close()
+	}()
+
+	f.Close()
+	return false
+}
+
+func Mostrarebr(ruta string, part_start int) estructuras.Ebr {
+	var empty [100]byte
+	ebr_empty := estructuras.Ebr{}
+	ebr := estructuras.Ebr{}
+	disco, err := os.OpenFile(ruta, os.O_RDWR, 0660)
+
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &ebr)
+
+	if ebr.Part_next != empty {
+		return ebr
+	} else {
+		return ebr_empty
+	}
+}
+
 func crear_particion_primaria(direccion string, nombre string, size int, fit string, unit string) {
 	aux_unit := ""
 	aux_path := direccion
@@ -244,6 +347,7 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 	expresionRegular := regexp.MustCompile(`\d+`)
 	numerosComoString := ""
 	aux_fit := ""
+	master_boot_record := estructuras.Mbr{}
 	mbr_empty := estructuras.Mbr{}
 	var empty [100]byte
 
@@ -272,20 +376,8 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 	} else {
 		band_particion := false
 		num_particion := 0
-		mbr2 := Struct_a_bytes(mbr_empty)
-		sstruct := len(mbr2)
-		lectura := make([]byte, sstruct)
-		_, err = f.ReadAt(lectura, 0)
-
-		if err != nil && err != io.EOF {
-			Mens_error(err)
-		}
-
-		master_boot_record := Bytes_a_struct_mbr(lectura)
-
-		if err != nil {
-			Mens_error(err)
-		}
+		f.Seek(0, 0)
+		err = binary.Read(f, binary.BigEndian, &master_boot_record)
 
 		if master_boot_record.Mbr_tamano != empty {
 			s_part_start := ""
@@ -359,9 +451,8 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 						copy(master_boot_record.Mbr_partition[num_particion].Part_name[:], nombre)
 						copy(master_boot_record.Mbr_partition[num_particion].Part_correlative[:], []byte(numerosComoString))
 						copy(master_boot_record.Mbr_partition[num_particion].Part_id[:], "")
-						mbr_byte := Struct_a_bytes(master_boot_record)
 						f.Seek(0, os.SEEK_SET)
-						f.Write(mbr_byte)
+						err = binary.Write(f, binary.BigEndian, master_boot_record)
 
 						s_part_start = string(master_boot_record.Mbr_partition[num_particion].Part_start[:])
 						s_part_start = strings.Trim(s_part_start, "\x00")
@@ -443,10 +534,8 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 						copy(master_boot_record.Mbr_partition[num_particion].Part_correlative[:], []byte(numerosComoString))
 						copy(master_boot_record.Mbr_partition[num_particion].Part_id[:], "")
 
-						mbr_byte := Struct_a_bytes(master_boot_record)
-
 						f.Seek(0, os.SEEK_SET)
-						f.Write(mbr_byte)
+						err = binary.Write(f, binary.BigEndian, master_boot_record)
 
 						s_part_start_best = string(master_boot_record.Mbr_partition[best_index].Part_start[:])
 
@@ -530,10 +619,8 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 						copy(master_boot_record.Mbr_partition[num_particion].Part_correlative[:], []byte(numerosComoString))
 						copy(master_boot_record.Mbr_partition[num_particion].Part_id[:], "")
 
-						mbr_byte := Struct_a_bytes(master_boot_record)
-
 						f.Seek(0, os.SEEK_SET)
-						f.Write(mbr_byte)
+						err = binary.Write(f, binary.BigEndian, master_boot_record)
 
 						s_part_start_worst = string(master_boot_record.Mbr_partition[worst_index].Part_start[:])
 						s_part_start_worst = strings.Trim(s_part_start_worst, "\x00")
@@ -563,25 +650,13 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 	}
 }
 
-func Bytes_a_struct_mbr(s []byte) estructuras.Mbr {
-	p := estructuras.Mbr{}
-	dec := gob.NewDecoder(bytes.NewReader(s))
-	err := dec.Decode(&p)
-
-	// ERROR
-	if err != nil && err != io.EOF {
-		Mens_error(err)
-	}
-
-	return p
-}
-
 func crear_particion_extendida(direccion string, nombre string, size int, fit string, unit string) {
 	aux_fit := ""
 	aux_unit := ""
 	size_bytes := 1024
 
 	mbr_empty := estructuras.Mbr{}
+	master_boot_record := estructuras.Mbr{}
 	ebr_empty := estructuras.Ebr{}
 	var empty [100]byte
 
@@ -614,14 +689,8 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 		band_extendida := false
 		num_particion := 0
 
-		mbr2 := Struct_a_bytes(mbr_empty)
-		sstruct := len(mbr2)
-
-		lectura := make([]byte, sstruct)
 		f.Seek(0, os.SEEK_SET)
-		f.Read(lectura)
-
-		master_boot_record := Bytes_a_struct_mbr(lectura)
+		err = binary.Read(f, binary.BigEndian, &master_boot_record)
 
 		if master_boot_record.Mbr_tamano != empty {
 			s_part_type := ""
@@ -711,11 +780,11 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 							copy(master_boot_record.Mbr_partition[num_particion].Part_size[:], strconv.Itoa(size_bytes))
 							copy(master_boot_record.Mbr_partition[num_particion].Part_status[:], "0")
 							copy(master_boot_record.Mbr_partition[num_particion].Part_name[:], nombre)
-
-							mbr_byte := Struct_a_bytes(master_boot_record)
+							copy(master_boot_record.Mbr_partition[num_particion].Part_correlative[:], "")
+							copy(master_boot_record.Mbr_partition[num_particion].Part_id[:], "")
 
 							f.Seek(0, os.SEEK_SET)
-							f.Write(mbr_byte)
+							err = binary.Write(f, binary.BigEndian, master_boot_record)
 
 							s_part_start = string(master_boot_record.Mbr_partition[num_particion].Part_start[:])
 
@@ -731,10 +800,10 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 							copy(extended_boot_record.Part_size[:], "0")
 							copy(extended_boot_record.Part_next[:], "-1")
 							copy(extended_boot_record.Part_name[:], "")
-							ebr_byte := Struct_a_bytes(extended_boot_record)
-							f.Write(ebr_byte)
 
-							ebr_empty_byte := Struct_a_bytes(ebr_empty)
+							err = binary.Write(f, binary.BigEndian, extended_boot_record)
+
+							ebr_empty_byte := unsafe.Sizeof(ebr_empty)
 
 							pos_actual, _ := f.Seek(0, os.SEEK_CUR)
 							f.Seek(int64(pos_actual), os.SEEK_SET)
@@ -817,11 +886,11 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 							copy(master_boot_record.Mbr_partition[best_index].Part_size[:], strconv.Itoa(size_bytes))
 							copy(master_boot_record.Mbr_partition[best_index].Part_status[:], "0")
 							copy(master_boot_record.Mbr_partition[best_index].Part_name[:], nombre)
-
-							mbr_byte := Struct_a_bytes(master_boot_record)
+							copy(master_boot_record.Mbr_partition[best_index].Part_id[:], "")
+							copy(master_boot_record.Mbr_partition[best_index].Part_correlative[:], "")
 
 							f.Seek(0, os.SEEK_SET)
-							f.Write(mbr_byte)
+							err = binary.Write(f, binary.BigEndian, master_boot_record)
 
 							s_part_start_best = string(master_boot_record.Mbr_partition[best_index].Part_start[:])
 
@@ -837,13 +906,13 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 							copy(extended_boot_record.Part_size[:], "0")
 							copy(extended_boot_record.Part_next[:], "-1")
 							copy(extended_boot_record.Part_name[:], "")
-							ebr_byte := Struct_a_bytes(extended_boot_record)
-							f.Write(ebr_byte)
+
+							err = binary.Write(f, binary.BigEndian, extended_boot_record)
 
 							pos_actual, _ := f.Seek(0, os.SEEK_CUR)
 							f.Seek(int64(pos_actual), os.SEEK_SET)
 
-							ebr_empty_byte := Struct_a_bytes(mbr_empty)
+							ebr_empty_byte := unsafe.Sizeof(mbr_empty)
 
 							for i := 1; i < (size_bytes - int(binary.Size(ebr_empty_byte))); i++ {
 								f.Write([]byte{1})
@@ -923,11 +992,11 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 							copy(master_boot_record.Mbr_partition[worst_index].Part_size[:], strconv.Itoa(size_bytes))
 							copy(master_boot_record.Mbr_partition[worst_index].Part_status[:], "0")
 							copy(master_boot_record.Mbr_partition[worst_index].Part_name[:], nombre)
-
-							mbr_byte := Struct_a_bytes(master_boot_record)
+							copy(master_boot_record.Mbr_partition[worst_index].Part_id[:], "")
+							copy(master_boot_record.Mbr_partition[worst_index].Part_correlative[:], "")
 
 							f.Seek(0, os.SEEK_SET)
-							f.Write(mbr_byte)
+							err = binary.Write(f, binary.BigEndian, master_boot_record)
 
 							s_part_start_worst = string(master_boot_record.Mbr_partition[worst_index].Part_start[:])
 
@@ -943,13 +1012,13 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 							copy(extended_boot_record.Part_size[:], "0")
 							copy(extended_boot_record.Part_next[:], "-1")
 							copy(extended_boot_record.Part_name[:], "")
-							ebr_byte := Struct_a_bytes(extended_boot_record)
-							f.Write(ebr_byte)
+
+							err = binary.Write(f, binary.BigEndian, extended_boot_record)
 
 							pos_actual, _ := f.Seek(0, os.SEEK_CUR)
 							f.Seek(int64(pos_actual), os.SEEK_SET)
 
-							ebr_empty_byte := Struct_a_bytes(mbr_empty)
+							ebr_empty_byte := unsafe.Sizeof(mbr_empty)
 
 							for i := 1; i < (size_bytes - int(binary.Size(ebr_empty_byte))); i++ {
 								f.Write([]byte{1})
@@ -971,212 +1040,6 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 		}
 		f.Close()
 	}
-}
-
-func existe_particion(direccion string, nombre string) bool {
-
-	mbr_empty := estructuras.Mbr{}
-	var empty [100]byte
-
-	f, err := os.OpenFile(direccion, os.O_RDWR, 0660)
-
-	if err == nil {
-		mbr2 := Struct_a_bytes(mbr_empty)
-		sstruct := len(mbr2)
-
-		lectura := make([]byte, sstruct)
-		_, err = f.ReadAt(lectura, 0)
-
-		if err != nil && err != io.EOF {
-			Mens_error(err)
-		}
-
-		master_boot_record := Bytes_a_struct_mbr(lectura)
-
-		if err != nil {
-			Mens_error(err)
-		}
-
-		if master_boot_record.Mbr_tamano != empty {
-			s_part_name := ""
-			s_part_type := ""
-
-			for i := 0; i < 4; i++ {
-				s_part_name = string(master_boot_record.Mbr_partition[i].Part_name[:])
-				s_part_name = strings.Trim(s_part_name, "\x00")
-
-				if s_part_name == nombre {
-					f.Close()
-					return true
-				}
-
-				s_part_type = string(master_boot_record.Mbr_partition[i].Part_type[:])
-				s_part_type = strings.Trim(s_part_type, "\x00")
-
-				if s_part_type == "e" {
-					s_part_start := string(master_boot_record.Mbr_partition[i].Part_start[:])
-					s_part_start = strings.Trim(s_part_start, "\x00")
-					part_start, err := strconv.Atoi(s_part_start)
-					if err != nil {
-						Mens_error(err)
-					}
-					fmt.Println(direccion)
-					ebr := Mostrarebr(direccion, part_start)
-					band_salir := false
-					for !band_salir {
-						if ebr.Part_status != empty {
-							s_part_name := string(ebr.Part_name[:])
-							s_part_name = strings.Trim(s_part_name, "\x00")
-							if s_part_name == nombre {
-								return true
-							}
-						} else {
-							break
-						}
-
-						s_part_next := string(ebr.Part_next[:])
-						s_part_next = strings.Trim(s_part_next, "\x00")
-						part_next, err := strconv.Atoi(s_part_next)
-						if err != nil {
-							Mens_error(err)
-						}
-						if part_next == -1 {
-							band_salir = true
-						} else {
-							ebr = Mostrarebr(direccion, part_next)
-						}
-					}
-				}
-			}
-		} else {
-			fmt.Println("Error: el disco se encuentra vacio")
-		}
-	} else {
-		Mens_error(err)
-	}
-	defer func() {
-		f.Close()
-	}()
-
-	f.Close()
-	return false
-}
-
-func Bytes_a_struct_ebr(s []byte) estructuras.Ebr {
-	p := estructuras.Ebr{}
-	dec := gob.NewDecoder(bytes.NewReader(s))
-	err := dec.Decode(&p)
-
-	if err != nil && err != io.EOF {
-		Mens_error(err)
-	}
-
-	return p
-}
-
-func obtener_ebr(ruta string, part_start int) estructuras.Ebr {
-	var empty [100]byte
-	ebr_empty := estructuras.Ebr{}
-
-	// Apertura de archivo
-	disco, err := os.OpenFile(ruta, os.O_RDWR, 0660)
-
-	// ERROR
-	if err != nil {
-		Mens_error(err)
-	}
-	defer func() {
-		disco.Close()
-	}()
-
-	// Calculo del tamano de struct en bytes
-	ebr2 := Struct_a_bytes(ebr_empty)
-	sstruct := len(ebr2)
-
-	// Lectrura del archivo binario desde el inicio
-	lectura := make([]byte, sstruct)
-	_, err = disco.ReadAt(lectura, int64(part_start))
-
-	// ERROR
-	if err != nil && err != io.EOF {
-		Mens_error(err)
-	}
-
-	// Conversion de bytes a struct
-	ebr := Bytes_a_struct_ebr(lectura)
-
-	// ERROR
-	if err != nil {
-		Mens_error(err)
-	}
-
-	if ebr.Part_next != empty {
-		return ebr
-	} else {
-		return ebr_empty
-	}
-}
-func Mostrarebr(ruta string, part_start int) estructuras.Ebr {
-	var empty [100]byte
-	ebr_empty := estructuras.Ebr{}
-
-	disco, err := os.OpenFile(ruta, os.O_RDWR, 0660)
-
-	if err != nil {
-		Mens_error(err)
-	}
-	defer func() {
-		disco.Close()
-	}()
-
-	ebr2 := Struct_a_bytes(ebr_empty)
-	sstruct := len(ebr2)
-
-	lectura := make([]byte, sstruct)
-	_, err = disco.ReadAt(lectura, int64(part_start))
-	if err != nil && err != io.EOF {
-		Mens_error(err)
-	}
-	ebr := Bytes_a_struct_ebr(lectura)
-
-	if err != nil {
-		Mens_error(err)
-	}
-
-	if ebr.Part_next != empty {
-		return ebr
-	} else {
-		return ebr_empty
-	}
-}
-
-func Mostrarmbr(ruta string) estructuras.Mbr {
-
-	mbr_empty := estructuras.Mbr{}
-	var empty [100]byte
-	f, err := os.OpenFile(valorpath, os.O_RDWR, 0660)
-
-	defer func() {
-		f.Close()
-	}()
-
-	if err == nil {
-		mbr2 := Struct_a_bytes(mbr_empty)
-		sstruct := len(mbr2)
-
-		lectura := make([]byte, sstruct)
-		f.Seek(0, os.SEEK_SET)
-		f.Read(lectura)
-
-		master_boot_record := Bytes_a_struct_mbr(lectura)
-
-		if master_boot_record.Mbr_tamano != empty {
-			return master_boot_record
-		} else {
-			return mbr_empty
-		}
-	}
-	return mbr_empty
 }
 
 func crear_particion_logixa(direccion string, nombre string, size int, fit string, unit string) {
@@ -1208,19 +1071,15 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 	partition_extendida := 0
 	band_eliminada := false
 
-	mbr_empty := estructuras.Mbr{}
+	//mbr_empty := estructuras.Mbr{}
+	master_boot_record := estructuras.Mbr{}
 	var empty [100]byte
 	f, err := os.OpenFile(direccion, os.O_RDWR, 0660)
 
 	if err == nil {
-		mbr2 := Struct_a_bytes(mbr_empty)
-		sstruct := len(mbr2)
 
-		lectura := make([]byte, sstruct)
 		f.Seek(0, os.SEEK_SET)
-		f.Read(lectura)
-
-		master_boot_record := Bytes_a_struct_mbr(lectura)
+		err = binary.Read(f, binary.BigEndian, &master_boot_record)
 
 		if master_boot_record.Mbr_tamano != empty {
 			s_part_type := ""
@@ -1248,7 +1107,8 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 			}
 			band_salir := false
 			for !band_salir {
-				ebr_emp := estructuras.Ebr{}
+				//ebr_emp := estructuras.Ebr{}
+				ebr := estructuras.Ebr{}
 
 				if err != nil {
 					Mens_error(err)
@@ -1257,17 +1117,8 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 					f.Close()
 				}()
 
-				ebr2 := Struct_a_bytes(ebr_emp)
-				sstruct := len(ebr2)
-
-				lectura := make([]byte, sstruct)
-				_, err = f.ReadAt(lectura, int64(i_part_start))
-
-				if err != nil && err != io.EOF {
-					Mens_error(err)
-				}
-
-				ebr := Bytes_a_struct_ebr(lectura)
+				f.Seek(int64(i_part_start), 0)
+				err = binary.Read(f, binary.BigEndian, &ebr)
 
 				if err != nil {
 					Mens_error(err)
@@ -1327,19 +1178,12 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 				if err != nil {
 					Mens_error(err)
 				}
+				f.Seek(int64(i_part_start), os.SEEK_SET)
 
-				ebr_byte := Struct_a_bytes(ebr_empty)
-				newpos, err := f.Seek(int64(i_part_start), os.SEEK_SET)
+				err = binary.Write(f, binary.BigEndian, &ebr_empty)
 				if err != nil {
 					Mens_error(err)
 				}
-				_, err = f.WriteAt(ebr_byte, newpos)
-
-				if err != nil {
-					Mens_error(err)
-				}
-
-				//s_part_type := ""
 
 				fmt.Println("Se creo correctamente la particion logica")
 
@@ -1352,12 +1196,9 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 					copy(ebr_emptys.Part_next[:], "-1")
 					copy(ebr_emptys.Part_name[:], "")
 
-					ebr_bytes := Struct_a_bytes(ebr_emptys)
-					posi, err := f.Seek(int64(nuevo_part_next), os.SEEK_SET)
-					if err != nil {
-						Mens_error(err)
-					}
-					_, err = f.WriteAt(ebr_bytes, posi)
+					f.Seek(int64(nuevo_part_next), os.SEEK_SET)
+
+					err = binary.Write(f, binary.BigEndian, &ebr_emptys)
 
 					if err != nil {
 						Mens_error(err)
@@ -1375,23 +1216,17 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 }
 
 func eliminar(direccion string, nombre string) {
-	//particion_extendida := 0
 	ebr_empty := estructuras.Ebr{}
-	partition_extendida := 0
 
-	mbr_empty := estructuras.Mbr{}
+	//mbr_empty := estructuras.Mbr{}
+	master_boot_record := estructuras.Mbr{}
 	var empty [100]byte
 	f, err := os.OpenFile(direccion, os.O_RDWR, 0660)
 
 	if err == nil {
-		mbr2 := Struct_a_bytes(mbr_empty)
-		sstruct := len(mbr2)
 
-		lectura := make([]byte, sstruct)
 		f.Seek(0, os.SEEK_SET)
-		f.Read(lectura)
-
-		master_boot_record := Bytes_a_struct_mbr(lectura)
+		err = binary.Read(f, binary.BigEndian, &master_boot_record)
 
 		if master_boot_record.Mbr_tamano != empty {
 			for i := 0; i < 4; i++ {
@@ -1430,40 +1265,60 @@ func eliminar(direccion string, nombre string) {
 						emptyPartid := make([]byte, len(master_boot_record.Mbr_partition[i].Part_id))
 						copy(master_boot_record.Mbr_partition[i].Part_id[:], emptyPartid)
 						copy(master_boot_record.Mbr_partition[i].Part_id[:], "0")
-						mbr_byte := Struct_a_bytes(master_boot_record)
 
-						newpos, err := f.Seek(0, os.SEEK_SET)
-
-						if err != nil {
-							Mens_error(err)
-						}
-
-						_, err = f.WriteAt(mbr_byte, newpos)
+						f.Seek(0, os.SEEK_SET)
+						err = binary.Write(f, binary.BigEndian, &master_boot_record)
 
 						if err != nil {
 							Mens_error(err)
 						}
 						fmt.Println("Se elimino correctamente la particion primaria")
-
+						break
 					} else if s_part_types == "e" {
-						//particion_extendida = i
+						emptyPartstatus := make([]byte, len(master_boot_record.Mbr_partition[i].Part_status))
+						copy(master_boot_record.Mbr_partition[i].Part_status[:], emptyPartstatus)
 						copy(master_boot_record.Mbr_partition[i].Part_status[:], "E")
+						emptyParttype := make([]byte, len(master_boot_record.Mbr_partition[i].Part_type))
+						copy(master_boot_record.Mbr_partition[i].Part_type[:], emptyParttype)
 						copy(master_boot_record.Mbr_partition[i].Part_type[:], "0")
+						emptyPartfit := make([]byte, len(master_boot_record.Mbr_partition[i].Part_fit))
+						copy(master_boot_record.Mbr_partition[i].Part_fit[:], emptyPartfit)
 						copy(master_boot_record.Mbr_partition[i].Part_fit[:], "0")
+						emptyPartstart := make([]byte, len(master_boot_record.Mbr_partition[i].Part_start))
+						copy(master_boot_record.Mbr_partition[i].Part_start[:], emptyPartstart)
 						copy(master_boot_record.Mbr_partition[i].Part_start[:], "0")
+						emptyPartsize := make([]byte, len(master_boot_record.Mbr_partition[i].Part_size))
+						copy(master_boot_record.Mbr_partition[i].Part_size[:], emptyPartsize)
 						copy(master_boot_record.Mbr_partition[i].Part_size[:], "0")
+						emptyPartname := make([]byte, len(master_boot_record.Mbr_partition[i].Part_name))
+						copy(master_boot_record.Mbr_partition[i].Part_name[:], emptyPartname)
 						copy(master_boot_record.Mbr_partition[i].Part_name[:], "0")
+						emptyPartcorre := make([]byte, len(master_boot_record.Mbr_partition[i].Part_correlative))
+						copy(master_boot_record.Mbr_partition[i].Part_correlative[:], emptyPartcorre)
 						copy(master_boot_record.Mbr_partition[i].Part_correlative[:], "0")
+						emptyPartid := make([]byte, len(master_boot_record.Mbr_partition[i].Part_id))
+						copy(master_boot_record.Mbr_partition[i].Part_id[:], emptyPartid)
 						copy(master_boot_record.Mbr_partition[i].Part_id[:], "0")
-						s_part_start := string(master_boot_record.Mbr_partition[partition_extendida].Part_start[:])
+						s_part_start := string(master_boot_record.Mbr_partition[i].Part_start[:])
 						s_part_start = strings.Trim(s_part_start, "\x00")
 						i_part_start, err := strconv.Atoi(s_part_start)
 						if err != nil {
 							Mens_error(err)
 						}
+
+						f.Seek(0, os.SEEK_SET)
+						err = binary.Write(f, binary.BigEndian, &master_boot_record)
+
+						if err != nil {
+							Mens_error(err)
+						}
+
+						fmt.Println("Se elimino correctamente la particion extendida")
+						//break
 						band_salir := false
 						for !band_salir {
-							ebr_emp := estructuras.Ebr{}
+							//ebr_emp := estructuras.Ebr{}
+							ebr := estructuras.Ebr{}
 
 							if err != nil {
 								Mens_error(err)
@@ -1472,17 +1327,8 @@ func eliminar(direccion string, nombre string) {
 								f.Close()
 							}()
 
-							ebr2 := Struct_a_bytes(ebr_emp)
-							sstruct := len(ebr2)
-
-							lectura := make([]byte, sstruct)
-							_, err = f.ReadAt(lectura, int64(i_part_start))
-
-							if err != nil && err != io.EOF {
-								Mens_error(err)
-							}
-
-							ebr := Bytes_a_struct_ebr(lectura)
+							f.Seek(int64(i_part_start), 0)
+							err = binary.Read(f, binary.BigEndian, &ebr)
 
 							if err != nil {
 								Mens_error(err)
@@ -1494,28 +1340,127 @@ func eliminar(direccion string, nombre string) {
 							}
 							s_part_next := string(ebr.Part_next[:])
 							s_part_next = strings.Trim(s_part_next, "\x00")
-							if s_part_next == "-1" {
-								copy(ebr_empty.Part_status[:], "E")
-								copy(ebr_empty.Part_fit[:], "0")
-								copy(ebr_empty.Part_start[:], "0")
-								copy(ebr_empty.Part_size[:], "0")
-								copy(ebr_empty.Part_name[:], "0")
-								copy(ebr_empty.Part_next[:], "0")
-							} else {
-								copy(ebr_empty.Part_status[:], "E")
-								copy(ebr_empty.Part_fit[:], "0")
-								copy(ebr_empty.Part_start[:], "0")
-								copy(ebr_empty.Part_size[:], "0")
-								copy(ebr_empty.Part_name[:], "0")
-								copy(ebr_empty.Part_next[:], "0")
+							partt_start := string(ebr.Part_start[:])
+							partt_start = strings.Trim(partt_start, "\x00")
+							i_pa_start, err := strconv.Atoi(partt_start)
+							if err != nil {
+								Mens_error(err)
 							}
+							if s_part_next == "-1" {
 
+								ebrst := make([]byte, len(ebr.Part_status[:]))
+								copy(ebr.Part_status[:], ebrst)
+								copy(ebr.Part_status[:], "E")
+								ebrfit := make([]byte, len(ebr.Part_fit[:]))
+								copy(ebr.Part_fit[:], ebrfit)
+								copy(ebr.Part_fit[:], "0")
+								ebrstart := make([]byte, len(ebr.Part_start[:]))
+								copy(ebr.Part_start[:], ebrstart)
+								copy(ebr.Part_start[:], "0")
+								ebrsize := make([]byte, len(ebr.Part_size[:]))
+								copy(ebr.Part_size[:], ebrsize)
+								copy(ebr.Part_size[:], "0")
+								ebrnext := make([]byte, len(ebr.Part_next[:]))
+								copy(ebr.Part_next[:], ebrnext)
+								copy(ebr.Part_next[:], "0")
+								ebrname := make([]byte, len(ebr.Part_name[:]))
+								copy(ebr.Part_name[:], ebrname)
+								copy(ebr.Part_name[:], "0")
+								f.Seek(int64(i_pa_start), os.SEEK_SET)
+								err = binary.Write(f, binary.BigEndian, &ebr)
+
+								if err != nil {
+									Mens_error(err)
+								}
+
+								fmt.Println("Se elimino correctamente la particion logica")
+								break
+							} else if s_part_next != "E" {
+								ebrst := make([]byte, len(ebr.Part_status[:]))
+								copy(ebr.Part_status[:], ebrst)
+								copy(ebr.Part_status[:], "E")
+								ebrfit := make([]byte, len(ebr.Part_fit[:]))
+								copy(ebr.Part_fit[:], ebrfit)
+								copy(ebr.Part_fit[:], "0")
+								ebrstart := make([]byte, len(ebr.Part_start[:]))
+								copy(ebr.Part_start[:], ebrstart)
+								copy(ebr.Part_start[:], "0")
+								ebrsize := make([]byte, len(ebr.Part_size[:]))
+								copy(ebr.Part_size[:], ebrsize)
+								copy(ebr.Part_size[:], "0")
+								ebrnext := make([]byte, len(ebr.Part_next[:]))
+								copy(ebr.Part_next[:], ebrnext)
+								copy(ebr.Part_next[:], "0")
+								ebrname := make([]byte, len(ebr.Part_name[:]))
+								copy(ebr.Part_name[:], ebrname)
+								copy(ebr.Part_name[:], "0")
+								f.Seek(int64(i_pa_start), os.SEEK_SET)
+								err = binary.Write(f, binary.BigEndian, &ebr)
+
+								if err != nil {
+									Mens_error(err)
+								}
+								fmt.Println("Se elimino correctamente la particion logica")
+								break
+							} else if s_part_next == "E" {
+								band_salir = true
+							}
 						}
 					}
+				} else {
+					if s_part_types == "e" {
+						s_part_startw := string(master_boot_record.Mbr_partition[i].Part_start[:])
+						s_part_startw = strings.Trim(s_part_startw, "\x00")
+						part_startw, err := strconv.Atoi(s_part_startw)
+						if err != nil {
+							Mens_error(err)
+						}
+						ebr := Mostrarebr(direccion, part_startw)
+						band_salir := false
+						for !band_salir {
+							if ebr.Part_status != empty {
+								s_part_name := string(ebr.Part_name[:])
+								s_part_name = strings.Trim(s_part_name, "\x00")
+								if s_part_name == nombre {
+									partt_startu := string(ebr.Part_start[:])
+									partt_startu = strings.Trim(partt_startu, "\x00")
+									i_pa_startu, err := strconv.Atoi(partt_startu)
+									ebrst := make([]byte, len(ebr.Part_status[:]))
+									copy(ebr.Part_status[:], ebrst)
+									copy(ebr.Part_status[:], "E")
+									ebrfit := make([]byte, len(ebr.Part_fit[:]))
+									copy(ebr.Part_fit[:], ebrfit)
+									copy(ebr.Part_fit[:], "0")
+									ebrstart := make([]byte, len(ebr.Part_start[:]))
+									copy(ebr.Part_start[:], ebrstart)
+									copy(ebr.Part_start[:], "0")
+									ebrsize := make([]byte, len(ebr.Part_size[:]))
+									copy(ebr.Part_size[:], ebrsize)
+									copy(ebr.Part_size[:], "0")
+									ebrnext := make([]byte, len(ebr.Part_next[:]))
+									copy(ebr.Part_next[:], ebrnext)
+									copy(ebr.Part_next[:], "0")
+									ebrname := make([]byte, len(ebr.Part_name[:]))
+									copy(ebr.Part_name[:], ebrname)
+									copy(ebr.Part_name[:], "0")
 
+									f.Seek(int64(i_pa_startu), os.SEEK_SET)
+
+									err = binary.Write(f, binary.BigEndian, &ebr)
+
+									if err != nil {
+										Mens_error(err)
+									}
+									fmt.Println("Se elimino correctamente la particion logica")
+									band_salir = true
+								}
+							} else {
+								break
+							}
+						}
+					}
 				}
 			}
-
 		}
 
 	}

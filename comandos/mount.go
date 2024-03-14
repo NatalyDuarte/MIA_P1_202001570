@@ -1,8 +1,8 @@
 package comandos
 
 import (
+	"encoding/binary"
 	"fmt"
-	"io"
 	"mimodulo/estructuras"
 	"os"
 	"regexp"
@@ -65,23 +65,14 @@ func Mount(arre_coman []string) {
 					val_path = valorpathmo + val_driveletter + ".dsk"
 					if archivoExiste(val_path) {
 						var empty [100]byte
-						mbr_empty := estructuras.Mbr{}
+						mbr := estructuras.Mbr{}
 						disco, err := os.OpenFile(val_path, os.O_RDWR, 0660)
 
 						if err != nil {
 							Mens_error(err)
 						}
-						mbr2 := Struct_a_bytes(mbr_empty)
-						sstruct := len(mbr2)
-
-						lectura := make([]byte, sstruct)
-						_, err = disco.ReadAt(lectura, 0)
-
-						if err != nil && err != io.EOF {
-							Mens_error(err)
-						}
-
-						mbr := Bytes_a_struct_mbr(lectura)
+						disco.Seek(0, 0)
+						err = binary.Read(disco, binary.BigEndian, &mbr)
 						posicion := 0
 
 						if err != nil {
@@ -93,28 +84,31 @@ func Mount(arre_coman []string) {
 								name = strings.Trim(name, "\x00")
 								types := string(mbr.Mbr_partition[i].Part_type[:])
 								types = strings.Trim(types, "\x00")
+								status := string(mbr.Mbr_partition[i].Part_status[:])
+								status = strings.Trim(status, "\x00")
 								if name == val_name {
 									if types == "p" {
-										band_enc = true
-										posicion = i
+										if status != "1" {
+											band_enc = true
+											posicion = i
+											break
+										} else {
+											fmt.Println("Error: No se puede montar la particion ya que se encuentra montada")
+										}
+
 									}
 
 								}
 							}
 
 							if band_enc {
+								fmt.Println("Particion encontrada")
 								copy(mbr.Mbr_partition[posicion].Part_status[:], "1")
 
 								copy(mbr.Mbr_partition[posicion].Part_id[:], []byte(val_driveletter+numerosComoString+termina))
-								mbr_byte := Struct_a_bytes(mbr)
 
-								newpos, err := disco.Seek(0, os.SEEK_SET)
-
-								if err != nil {
-									Mens_error(err)
-								}
-
-								_, err = disco.WriteAt(mbr_byte, newpos)
+								disco.Seek(0, os.SEEK_SET)
+								err = binary.Write(disco, binary.BigEndian, &mbr)
 
 								if err != nil {
 									Mens_error(err)
@@ -124,7 +118,7 @@ func Mount(arre_coman []string) {
 								imprimir(val_path)
 
 							} else {
-								fmt.Println("Error: No existe la particion en el disco o la particion no es primaria")
+								fmt.Println("Error: No existe la particion en el disco o la particion no es primaria o ya esta montada la particion")
 							}
 							disco.Close()
 						}
@@ -149,7 +143,7 @@ func archivoExiste(ruta string) bool {
 }
 func imprimir(ruta string) {
 	var empty [100]byte
-	mbr_empty := estructuras.Mbr{}
+	mbr := estructuras.Mbr{}
 
 	disco, err := os.OpenFile(ruta, os.O_RDWR, 0660)
 
@@ -160,16 +154,8 @@ func imprimir(ruta string) {
 		disco.Close()
 	}()
 
-	mbr2 := Struct_a_bytes(mbr_empty)
-	sstruct := len(mbr2)
-
-	lectura := make([]byte, sstruct)
-	_, err = disco.ReadAt(lectura, 0)
-
-	if err != nil && err != io.EOF {
-		Mens_error(err)
-	}
-	mbr := Bytes_a_struct_mbr(lectura)
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
 
 	if err != nil {
 		Mens_error(err)

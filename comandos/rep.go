@@ -1,12 +1,13 @@
 package comandos
 
 import (
+	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
 	"mimodulo/estructuras"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -91,6 +92,10 @@ func Rep(arre_coman []string) {
 				if band_id {
 					if val_name == "mbr" {
 						RepoMbr(val_path, val_id)
+					} else if val_name == "disk" {
+						RepoDisk(val_path, val_id)
+					} else if val_name == "sb" {
+						ReporteSb(val_path, val_id)
 					}
 				} else {
 					fmt.Println("Error: No se encontro el id")
@@ -105,8 +110,6 @@ func Rep(arre_coman []string) {
 }
 
 func RepoMbr(path string, id string) {
-	//regex := regexp.MustCompile(`^[a-zA-Z]+`)
-	//letters := regex.FindString(id)
 	carpeta := ""
 	archivo := ""
 
@@ -144,7 +147,7 @@ func RepoMbr(path string, id string) {
 	var buffer string
 	buffer += "digraph G{\nsubgraph cluster{\nlabel=\"REPORTE DE MBR\"\ntbl[shape=box,label=<\n<table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >\n"
 	var empty [100]byte
-	mbr_empty := estructuras.Mbr{}
+	mbr := estructuras.Mbr{}
 
 	bandera_extendida := false
 	numero_exten := 0
@@ -158,16 +161,8 @@ func RepoMbr(path string, id string) {
 		disco.Close()
 	}()
 
-	mbr2 := Struct_a_bytes(mbr_empty)
-	sstruct := len(mbr2)
-
-	lectura := make([]byte, sstruct)
-	_, err = disco.ReadAt(lectura, 0)
-
-	if err != nil && err != io.EOF {
-		Mens_error(err)
-	}
-	mbr := Bytes_a_struct_mbr(lectura)
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
 
 	if err != nil {
 		Mens_error(err)
@@ -235,10 +230,9 @@ func RepoMbr(path string, id string) {
 			buffer += ("subgraph cluster_1{\n label=\"Particiones Logicas dentro de la extendida\"\ntbl_1[shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n")
 			for !bandera_bucle {
 				if ebr.Part_status != empty {
-
 					s_part_ebnexts := string(ebr.Part_next[:])
 					s_part_ebnexts = strings.Trim(s_part_ebnexts, "\x00")
-					if s_part_ebnexts != "-1" {
+					if s_part_ebnexts != "-1" && s_part_ebnexts != "0" {
 						buffer += "<tr>"
 						buffer += "<td width='150' colspan=\"2\" bgcolor=\"magenta\">Particion</td>"
 						buffer += "</tr>"
@@ -302,7 +296,353 @@ func RepoMbr(path string, id string) {
 			fmt.Errorf("no se pudo generar la imagen: %v", err)
 		}
 		val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+		fmt.Println("Reporte Mbr-Ebr creado exitosamente")
+	}
+
+}
+
+func obtener_ebr(ruta string, part_start int) estructuras.Ebr {
+	var empty [100]byte
+	ebr_empty := estructuras.Ebr{}
+	ebr := estructuras.Ebr{}
+
+	// Apertura de archivo
+	disco, err := os.OpenFile(ruta, os.O_RDWR, 0660)
+
+	// ERROR
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(int64(part_start), 0)
+	err = binary.Read(disco, binary.BigEndian, &ebr)
+
+	if err != nil {
+		Mens_error(err)
+	}
+
+	if ebr.Part_next != empty {
+		return ebr
+	} else {
+		return ebr_empty
+	}
+}
+
+func ReporteSb(path string, id string) {
+	carpeta := ""
+	archivo := ""
+	regex := regexp.MustCompile(`^[a-zA-Z]+`)
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			carpeta = path[:i]
+			archivo = path[i+1:]
+			break
+		}
+	}
+
+	fmt.Println("Carpeta:", carpeta)
+	fmt.Println("Archivo:", archivo)
+	letters := regex.FindString(id)
+	fmt.Println("Disco:", letters)
+
+	val_rutadis = val_rutadis + letters + ".dsk"
+
+	_, err := os.Stat(carpeta)
+
+	// Si la carpeta no existe, crearla
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(carpeta, 0755)
+			if err != nil {
+				fmt.Println("Error al crear la carpeta:", err)
+				return
+			}
+		} else {
+			fmt.Println("Error al verificar la carpeta:", err)
+			return
+		}
+	}
+
+	fmt.Println("La carpeta", carpeta, "ya existe o se ha creado correctamente")
+	mbr := estructuras.Mbr{}
+	sb := estructuras.Super_bloque{}
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+	var empty [100]byte
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+	if mbr.Mbr_tamano != empty {
+
+	}
+	var buffer string
+	numero_parti := 0
+	band_crea := false
+	for i := 0; i < 4; i++ {
+		s_part_id := string(mbr.Mbr_partition[i].Part_id[:])
+		s_part_id = strings.Trim(s_part_id, "\x00")
+
+		if s_part_id == id {
+			numero_parti = i
+			band_crea = true
+			break
+		}
+
+	}
+	if band_crea {
+		s_part_startas := string(mbr.Mbr_partition[numero_parti].Part_start[:])
+		s_part_startas = strings.Trim(s_part_startas, "\x00")
+		part_starta, err := strconv.Atoi(s_part_startas)
+		if err != nil {
+			Mens_error(err)
+		}
+
+		disco.Seek(int64(part_starta), 0)
+		err = binary.Read(disco, binary.BigEndian, &sb)
+		if sb.S_filesystem_type != empty {
+			buffer += "digraph G{\nsubgraph cluster{\nlabel=\"Super Bloque\"\ntbl[shape=box,label=<\n<table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >\n"
+			S_filesystem_type := string(sb.S_filesystem_type[:])
+			S_filesystem_type = strings.Trim(S_filesystem_type, "\x00")
+			buffer += "<tr><td><b>S_filesystem_type </b></td><td>" + S_filesystem_type + "</td> </tr>*"
+			S_inodes_count := string(sb.S_inodes_count[:])
+			S_inodes_count = strings.Trim(S_inodes_count, "\x00")
+			buffer += "<tr><td><b>S_inodes_count </b></td><td>" + S_inodes_count + "</td> </tr>\n"
+			S_blocks_count := string(sb.S_blocks_count[:])
+			S_blocks_count = strings.Trim(S_blocks_count, "\x00")
+			buffer += "<tr><td><b>S_blocks_count </b></td><td>" + S_blocks_count + "</td> </tr>\n"
+			S_free_blocks_count := string(sb.S_free_blocks_count[:])
+			S_free_blocks_count = strings.Trim(S_free_blocks_count, "\x00")
+			buffer += "<tr><td><b>S_free_blocks_count</b></td><td>" + S_free_blocks_count + "</td> </tr>\n"
+			S_free_inodes_count := string(sb.S_free_inodes_count[:])
+			S_free_inodes_count = strings.Trim(S_free_inodes_count, "\x00")
+			buffer += "<tr><td><b>S_free_inodes_count</b></td><td>" + S_free_inodes_count + "</td> </tr>\n"
+			S_mtime := string(sb.S_mtime[:])
+			S_mtime = strings.Trim(S_mtime, "\x00")
+			buffer += "<tr><td><b>S_mtime</b></td><td>" + S_mtime + "</td> </tr>\n"
+			S_umtime := string(sb.S_umtime[:])
+			S_umtime = strings.Trim(S_umtime, "\x00")
+			buffer += "<tr><td><b>S_umtime</b></td><td>" + S_umtime + "</td> </tr>\n"
+			S_mnt_count := string(sb.S_mnt_count[:])
+			S_mnt_count = strings.Trim(S_mnt_count, "\x00")
+			buffer += "<tr><td><b>S_mnt_count</b></td><td>" + S_mnt_count + "</td> </tr>\n"
+			S_magic := string(sb.S_magic[:])
+			S_magic = strings.Trim(S_magic, "\x00")
+			buffer += "<tr><td><b>S_magic</b></td><td>" + S_magic + "</td> </tr>\n"
+			S_inode_size := string(sb.S_inode_size[:])
+			S_inode_size = strings.Trim(S_inode_size, "\x00")
+			buffer += "<tr><td><b>S_inode_size</b></td><td>" + S_inode_size + "</td> </tr>\n"
+			S_block_size := string(sb.S_block_size[:])
+			S_block_size = strings.Trim(S_block_size, "\x00")
+			buffer += "<tr><td><b>Sb_date_ultimo_montaje</b></td><td>" + S_block_size + "</td> </tr>\n"
+			S_firts_ino := string(sb.S_firts_ino[:])
+			S_firts_ino = strings.Trim(S_firts_ino, "\x00")
+			buffer += "<tr><td><b>S_firts_ino</b></td><td>" + S_firts_ino + "</td> </tr>\n"
+			S_first_blo := string(sb.S_first_blo[:])
+			S_first_blo = strings.Trim(S_first_blo, "\x00")
+			buffer += "<tr><td><b>S_first_blo</b></td><td>" + S_first_blo + "</td> </tr>\n"
+			S_bm_inode_start := string(sb.S_bm_inode_start[:])
+			S_bm_inode_start = strings.Trim(S_bm_inode_start, "\x00")
+			buffer += "<tr><td><b>S_bm_inode_start</b></td><td>" + S_bm_inode_start + "</td> </tr>\n"
+			S_bm_block_start := string(sb.S_bm_block_start[:])
+			S_bm_block_start = strings.Trim(S_bm_block_start, "\x00")
+			buffer += "<tr><td><b>S_bm_block_start</b></td><td>" + S_bm_block_start + "</td> </tr>\n"
+			S_inode_start := string(sb.S_inode_start[:])
+			S_inode_start = strings.Trim(S_inode_start, "\x00")
+			buffer += "<tr><td><b>S_inode_start</b></td><td>" + S_inode_start + "</td> </tr>\n"
+			S_block_start := string(sb.S_block_start[:])
+			S_block_start = strings.Trim(S_block_start, "\x00")
+			buffer += "<tr><td><b>S_block_start</b></td><td>" + S_block_start + "</td> </tr>\n"
+			buffer += "</table>\n>];\n}"
+			buffer += "}\n"
+		}
 
 	}
 
+	file, err2 := os.Create("Super.dot")
+	if err2 != nil && !os.IsExist(err) {
+		log.Fatal(err2)
+	}
+	defer file.Close()
+
+	err = os.Chmod("Super.dot", 0777)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+
+	_, err = file.WriteString(buffer)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+	cmd := exec.Command("dot", "-Tpng", "Super.dot", "-o", path)
+	err = cmd.Run()
+	if err != nil {
+		fmt.Errorf("no se pudo generar la imagen: %v", err)
+	}
+	val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+	fmt.Println("Reporte Super Blocke creado exitosamente")
+}
+
+func RepoDisk(path string, id string) {
+	var buffer string
+	mbr := estructuras.Mbr{}
+	val_rutadis = val_rutadis + id + ".dsk"
+	buffer += "digraph G{\ntbl [\nshape=box\nlabel=<\n<table border='0' cellborder='2' width='100' height=\"30\" color='lightblue4'>\n<tr>"
+	f, err := os.OpenFile(val_rutadis, os.O_RDWR, 0755)
+	if err != nil {
+		fmt.Println("Error: No existe la ruta")
+	}
+	defer f.Close()
+	PorcentajeUtilizao := 0.0
+	var EspacioUtilizado int64 = 0
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+
+	TamanioDisco := string(mbr.Mbr_tamano[:])
+	TamanioDisco = strings.Trim(TamanioDisco, "\x00")
+	tamdis, err := strconv.Atoi(TamanioDisco)
+	if err != nil {
+		print("Aqw")
+		Mens_error(err)
+	}
+	buffer += "<td height='30' width='75'> MBR </td>"
+	for i := 0; i < 4; i++ {
+		s_part_partina := string(mbr.Mbr_partition[i].Part_type[:])
+		s_part_partina = strings.Trim(s_part_partina, "\x00")
+		s_part_partna := string(mbr.Mbr_partition[i].Part_name[:])
+		s_part_partna = strings.Trim(s_part_partna, "\x00")
+		s_part_partstatus := string(mbr.Mbr_partition[i].Part_status[:])
+		s_part_partstatus = strings.Trim(s_part_partstatus, "\x00")
+		if s_part_partina == "p" {
+			s_part_partsiz := string(mbr.Mbr_partition[i].Part_size[:])
+			s_part_partsiz = strings.Trim(s_part_partsiz, "\x00")
+			part_size, err := strconv.Atoi(s_part_partsiz)
+			if err != nil {
+				print("Aqw1")
+				Mens_error(err)
+			}
+			PorcentajeUtilizao = (float64(part_size) / float64(tamdis)) * 100
+			buffer += "<td height='30' width='75.0'>PRIMARIA <br/>" + s_part_partna + " <br/> Ocupado: " + strconv.Itoa(int(PorcentajeUtilizao)) + "%</td>"
+			EspacioUtilizado += int64(part_size)
+		} else if s_part_partstatus == "0" {
+			buffer += "<td height='30' width='75.0'>Libre</td>"
+		}
+		if s_part_partina == "e" {
+			s_part_partsiz := string(mbr.Mbr_partition[i].Part_size[:])
+			s_part_partsiz = strings.Trim(s_part_partsiz, "\x00")
+			part_size, err := strconv.Atoi(s_part_partsiz)
+			if err != nil {
+				print("Aqw3")
+				Mens_error(err)
+			}
+			EspacioUtilizado += int64(part_size)
+			PorcentajeUtilizao = (float64(part_size) / float64(tamdis)) * 100
+			buffer += "<td  height='30' width='15.0'>\n"
+			buffer += "<table border='5'  height='30' WIDTH='15.0' cellborder='1'>\n"
+			buffer += " <tr>  <td height='60' colspan='100%'>EXTENDIDA <br/>" + s_part_partna + " <br/> Ocupado:" + strconv.Itoa(int(PorcentajeUtilizao)) + "%</td>  </tr>\n<tr>"
+			s_part_partsart := string(mbr.Mbr_partition[i].Part_start[:])
+			s_part_partsart = strings.Trim(s_part_partsart, "\x00")
+			part_start, err := strconv.Atoi(s_part_partsart)
+			if err != nil {
+				print("Aqw4")
+				Mens_error(err)
+			}
+			var InicioExtendida int64 = int64(part_start)
+			disco.Seek(int64(InicioExtendida), 0)
+			ebr := estructuras.Ebr{}
+			err = binary.Read(disco, binary.BigEndian, &ebr)
+
+			if err != nil {
+				Mens_error(err)
+			}
+			bandera_bucle := false
+			var empty [100]byte
+			for !bandera_bucle {
+				ebr_next := string(ebr.Part_next[:])
+				ebr_next = strings.Trim(ebr_next, "\x00")
+				if ebr.Part_status != empty {
+					if ebr_next != "-1" {
+						ebr_size := string(ebr.Part_size[:])
+						ebr_size = strings.Trim(ebr_size, "\x00")
+						part_sizes, err := strconv.Atoi(ebr_size)
+						if err != nil {
+							print("Aqw5")
+							Mens_error(err)
+						}
+
+						EspacioUtilizado += int64(part_sizes)
+						PorcentajeUtilizao = (float64(part_sizes) / float64(part_size)) * 100
+						ebr_name := string(ebr.Part_name[:])
+						ebr_name = strings.Trim(ebr_name, "\x00")
+						buffer += "<td height='30'>EBR</td><td height='30'> Logica:  " + ebr_name + " " + strconv.Itoa(int(PorcentajeUtilizao)) + "%</td>"
+					}
+
+				} else {
+					break
+				}
+				s_part_next := string(ebr.Part_next[:])
+				s_part_next = strings.Trim(s_part_next, "\x00")
+				part_next, err := strconv.Atoi(s_part_next)
+				if err != nil {
+					print("Aqw6")
+					Mens_error(err)
+				}
+				if part_next == -1 {
+					bandera_bucle = true
+				} else {
+					ebr = obtener_ebr(val_rutadis, part_next)
+				}
+
+			}
+			if (int64(part_size) - EspacioUtilizado) > 0 {
+				PorcentajeUtilizao = (float64(int64(tamdis)-EspacioUtilizado) / float64(tamdis)) * 100
+				buffer += "<td height='30' width='100%'>Libre: " + strconv.Itoa(int(PorcentajeUtilizao)) + "%</td>"
+			}
+
+			buffer += "</tr>\n"
+			buffer += "</table>\n</td>"
+
+		}
+	}
+	if (int64(tamdis) - EspacioUtilizado) > 0 {
+		PorcentajeUtilizao = (float64(int64(tamdis)-EspacioUtilizado) / float64(tamdis)) * 100
+		buffer += "<td height='30' width='75.0'>Libre: " + strconv.Itoa(int(PorcentajeUtilizao)) + "%</td>"
+	}
+	buffer += "     </tr>\n</table>\n>];\n}"
+	file, err2 := os.Create("Disk.dot")
+	if err2 != nil && !os.IsExist(err) {
+		log.Fatal(err2)
+	}
+	defer file.Close()
+
+	err = os.Chmod("Disk.dot", 0777)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+
+	_, err = file.WriteString(buffer)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+	cmd := exec.Command("dot", "-Tpng", "Disk.dot", "-o", path)
+	err = cmd.Run()
+	if err != nil {
+		fmt.Errorf("no se pudo generar la imagen: %v", err)
+	}
+	val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+	fmt.Println("Reporte Disk creado exitosamente")
 }
