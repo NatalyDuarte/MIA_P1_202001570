@@ -96,6 +96,8 @@ func Rep(arre_coman []string) {
 						RepoDisk(val_path, val_id)
 					} else if val_name == "sb" {
 						ReporteSb(val_path, val_id)
+					} else if val_name == "inode" {
+						ReporteInode(val_path, val_id)
 					}
 				} else {
 					fmt.Println("Error: No se encontro el id")
@@ -409,55 +411,55 @@ func ReporteSb(path string, id string) {
 			buffer += "digraph G{\nsubgraph cluster{\nlabel=\"Super Bloque\"\ntbl[shape=box,label=<\n<table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >\n"
 			S_filesystem_type := string(sb.S_filesystem_type[:])
 			S_filesystem_type = strings.Trim(S_filesystem_type, "\x00")
-			buffer += "<tr><td><b>S_filesystem_type </b></td><td>" + S_filesystem_type + "</td> </tr>*"
+			buffer += "<tr> <td bgcolor=\"green\"><b>S_filesystem_type </b></td><td bgcolor=\"green\">" + S_filesystem_type + "</td> </tr>*"
 			S_inodes_count := string(sb.S_inodes_count[:])
 			S_inodes_count = strings.Trim(S_inodes_count, "\x00")
 			buffer += "<tr><td><b>S_inodes_count </b></td><td>" + S_inodes_count + "</td> </tr>\n"
 			S_blocks_count := string(sb.S_blocks_count[:])
 			S_blocks_count = strings.Trim(S_blocks_count, "\x00")
-			buffer += "<tr><td><b>S_blocks_count </b></td><td>" + S_blocks_count + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_blocks_count </b></td><td bgcolor=\"green\">" + S_blocks_count + "</td> </tr>\n"
 			S_free_blocks_count := string(sb.S_free_blocks_count[:])
 			S_free_blocks_count = strings.Trim(S_free_blocks_count, "\x00")
 			buffer += "<tr><td><b>S_free_blocks_count</b></td><td>" + S_free_blocks_count + "</td> </tr>\n"
 			S_free_inodes_count := string(sb.S_free_inodes_count[:])
 			S_free_inodes_count = strings.Trim(S_free_inodes_count, "\x00")
-			buffer += "<tr><td><b>S_free_inodes_count</b></td><td>" + S_free_inodes_count + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_free_inodes_count</b></td><td bgcolor=\"green\">" + S_free_inodes_count + "</td> </tr>\n"
 			S_mtime := string(sb.S_mtime[:])
 			S_mtime = strings.Trim(S_mtime, "\x00")
 			buffer += "<tr><td><b>S_mtime</b></td><td>" + S_mtime + "</td> </tr>\n"
 			S_umtime := string(sb.S_umtime[:])
 			S_umtime = strings.Trim(S_umtime, "\x00")
-			buffer += "<tr><td><b>S_umtime</b></td><td>" + S_umtime + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_umtime</b></td><td bgcolor=\"green\">" + S_umtime + "</td> </tr>\n"
 			S_mnt_count := string(sb.S_mnt_count[:])
 			S_mnt_count = strings.Trim(S_mnt_count, "\x00")
 			buffer += "<tr><td><b>S_mnt_count</b></td><td>" + S_mnt_count + "</td> </tr>\n"
 			S_magic := string(sb.S_magic[:])
 			S_magic = strings.Trim(S_magic, "\x00")
-			buffer += "<tr><td><b>S_magic</b></td><td>" + S_magic + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_magic</b></td><td bgcolor=\"green\">" + S_magic + "</td> </tr>\n"
 			S_inode_size := string(sb.S_inode_size[:])
 			S_inode_size = strings.Trim(S_inode_size, "\x00")
 			buffer += "<tr><td><b>S_inode_size</b></td><td>" + S_inode_size + "</td> </tr>\n"
 			S_block_size := string(sb.S_block_size[:])
 			S_block_size = strings.Trim(S_block_size, "\x00")
-			buffer += "<tr><td><b>Sb_date_ultimo_montaje</b></td><td>" + S_block_size + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>Sb_date_ultimo_montaje</b></td><td bgcolor=\"green\">" + S_block_size + "</td> </tr>\n"
 			S_firts_ino := string(sb.S_firts_ino[:])
 			S_firts_ino = strings.Trim(S_firts_ino, "\x00")
 			buffer += "<tr><td><b>S_firts_ino</b></td><td>" + S_firts_ino + "</td> </tr>\n"
 			S_first_blo := string(sb.S_first_blo[:])
 			S_first_blo = strings.Trim(S_first_blo, "\x00")
-			buffer += "<tr><td><b>S_first_blo</b></td><td>" + S_first_blo + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_first_blo</b></td><td bgcolor=\"green\">" + S_first_blo + "</td> </tr>\n"
 			S_bm_inode_start := string(sb.S_bm_inode_start[:])
 			S_bm_inode_start = strings.Trim(S_bm_inode_start, "\x00")
 			buffer += "<tr><td><b>S_bm_inode_start</b></td><td>" + S_bm_inode_start + "</td> </tr>\n"
 			S_bm_block_start := string(sb.S_bm_block_start[:])
 			S_bm_block_start = strings.Trim(S_bm_block_start, "\x00")
-			buffer += "<tr><td><b>S_bm_block_start</b></td><td>" + S_bm_block_start + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_bm_block_start</b></td><td bgcolor=\"green\">" + S_bm_block_start + "</td> </tr>\n"
 			S_inode_start := string(sb.S_inode_start[:])
 			S_inode_start = strings.Trim(S_inode_start, "\x00")
 			buffer += "<tr><td><b>S_inode_start</b></td><td>" + S_inode_start + "</td> </tr>\n"
 			S_block_start := string(sb.S_block_start[:])
 			S_block_start = strings.Trim(S_block_start, "\x00")
-			buffer += "<tr><td><b>S_block_start</b></td><td>" + S_block_start + "</td> </tr>\n"
+			buffer += "<tr><td bgcolor=\"green\"><b>S_block_start</b></td><td bgcolor=\"green\">" + S_block_start + "</td> </tr>\n"
 			buffer += "</table>\n>];\n}"
 			buffer += "}\n"
 		}
@@ -645,4 +647,187 @@ func RepoDisk(path string, id string) {
 	}
 	val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
 	fmt.Println("Reporte Disk creado exitosamente")
+}
+
+func ReporteInode(path string, id string) {
+	carpeta := ""
+	archivo := ""
+	regex := regexp.MustCompile(`^[a-zA-Z]+`)
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			carpeta = path[:i]
+			archivo = path[i+1:]
+			break
+		}
+	}
+
+	fmt.Println("Carpeta:", carpeta)
+	fmt.Println("Archivo:", archivo)
+	letters := regex.FindString(id)
+	fmt.Println("Disco:", letters)
+
+	val_rutadis = val_rutadis + letters + ".dsk"
+
+	_, err := os.Stat(carpeta)
+
+	// Si la carpeta no existe, crearla
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(carpeta, 0755)
+			if err != nil {
+				fmt.Println("Error al crear la carpeta:", err)
+				return
+			}
+		} else {
+			fmt.Println("Error al verificar la carpeta:", err)
+			return
+		}
+	}
+	fmt.Println("La carpeta", carpeta, "ya existe o se ha creado correctamente")
+	mbr := estructuras.Mbr{}
+	sb := estructuras.Super_bloque{}
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+	var empty [100]byte
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+	if mbr.Mbr_tamano != empty {
+
+	}
+	var buffer string
+	numero_parti := 0
+	band_crea := false
+	for i := 0; i < 4; i++ {
+		s_part_id := string(mbr.Mbr_partition[i].Part_id[:])
+		s_part_id = strings.Trim(s_part_id, "\x00")
+
+		if s_part_id == id {
+			numero_parti = i
+			band_crea = true
+			break
+		}
+
+	}
+
+	if band_crea {
+		s_part_startas := string(mbr.Mbr_partition[numero_parti].Part_start[:])
+		s_part_startas = strings.Trim(s_part_startas, "\x00")
+		part_starta, err := strconv.Atoi(s_part_startas)
+		if err != nil {
+			Mens_error(err)
+		}
+
+		disco.Seek(int64(part_starta), 0)
+		err = binary.Read(disco, binary.BigEndian, &sb)
+		if sb.S_filesystem_type != empty {
+			s_inodos_count := string(sb.S_inodes_count[:])
+			s_inodos_count = strings.Trim(s_inodos_count, "\x00")
+			numero_inodos, err := strconv.Atoi(s_inodos_count)
+			if err != nil {
+				Mens_error(err)
+			}
+			s_free_inodos := string(sb.S_free_inodes_count[:])
+			s_free_inodos = strings.Trim(s_free_inodos, "\x00")
+			numero_inodos_libres, err := strconv.Atoi(s_free_inodos)
+			if err != nil {
+				Mens_error(err)
+			}
+
+			s_inodos_start := string(sb.S_inode_start[:])
+			s_inodos_start = strings.Trim(s_inodos_start, "\x00")
+			start_inodos, err := strconv.Atoi(s_inodos_start)
+			if err != nil {
+				Mens_error(err)
+			}
+
+			numero_inodos_uso := numero_inodos - numero_inodos_libres
+			buffer += "digraph G{\n"
+			for c := 0; c < int(numero_inodos_uso); c++ {
+				inodos := leerInodos(int64(start_inodos), val_rutadis)
+				buffer += "subgraph cluster_" + strconv.Itoa(c) + "{\n label=\"Inodo" + strconv.Itoa(c) + "\"\ntbl_" + strconv.Itoa(c) + "[shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
+				s_inodo_uid := string(inodos.I_uid[:])
+				s_inodo_uid = strings.Trim(s_inodo_uid, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_uid" + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_uid + "</td></tr>\n"
+				s_inodo_gid := string(inodos.I_gid[:])
+				s_inodo_gid = strings.Trim(s_inodo_gid, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_gid" + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_gid + "</td></tr>\n"
+				s_inodo_size := string(inodos.I_size[:])
+				s_inodo_size = strings.Trim(s_inodo_size, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_size" + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_size + "</td></tr>\n"
+				s_inodo_atime := string(inodos.I_atime[:])
+				s_inodo_atime = strings.Trim(s_inodo_atime, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_atime" + "</b></td><td width='150' bgcolor=\"pink\">\"" + s_inodo_atime + "\"</td></tr>\n"
+				s_inodo_ctime := string(inodos.I_ctime[:])
+				s_inodo_ctime = strings.Trim(s_inodo_ctime, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_ctime" + "</b></td><td width='150' bgcolor=\"pink\">\"" + s_inodo_ctime + "\"</td></tr>\n"
+				s_inodo_mtime := string(inodos.I_mtime[:])
+				s_inodo_mtime = strings.Trim(s_inodo_mtime, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_mtime" + "</b></td><td width='150' bgcolor=\"pink\">\"" + s_inodo_mtime + "\"</td></tr>\n"
+				// bloques
+				/*
+					for i := 1; i < 16; i++ {
+						s_inodo_bloc := string(inodos.I_block[i])
+						s_inodo_bloc = strings.Trim(s_inodo_bloc, "\x00")
+						buffer += "<tr>  <td width='150' bgcolor=\"pink\"><b>I_bloc" + strconv.Itoa(i) + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_bloc + "</td>  </tr>\n"
+
+					}*/
+				s_inodo_type := string(inodos.I_type[:])
+				s_inodo_type = strings.Trim(s_inodo_type, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_type" + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_type + "</td></tr>\n"
+				s_inodo_perm := string(inodos.I_perm[:])
+				s_inodo_perm = strings.Trim(s_inodo_perm, "\x00")
+				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_perm" + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_perm + "</td></tr>\n"
+				buffer += "</table>>];}\n"
+			}
+			buffer += "}\n"
+			file, err2 := os.Create("Inodo.dot")
+			if err2 != nil && !os.IsExist(err) {
+				log.Fatal(err2)
+			}
+			defer file.Close()
+
+			err = os.Chmod("Inodo.dot", 0777)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+
+			_, err = file.WriteString(buffer)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+			cmd := exec.Command("dot", "-Tpng", "Inodo.dot", "-o", path)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Errorf("no se pudo generar la imagen: %v", err)
+			}
+			val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+			fmt.Println("Reporte Inodo creado exitosamente")
+		}
+
+	}
+
+}
+
+func leerInodos(start int64, pathDisco string) estructuras.Inodo {
+	file, err := os.Open(pathDisco)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	file.Seek(start, 0)
+
+	inodo := estructuras.Inodo{}
+	err = binary.Read(file, binary.LittleEndian, &inodo)
+	if err != nil {
+		Mens_error(err)
+	}
+
+	return inodo
+
 }

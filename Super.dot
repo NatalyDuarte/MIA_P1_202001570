@@ -3,22 +3,22 @@ subgraph cluster{
 label="Super Bloque"
 tbl[shape=box,label=<
 <table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >
-<tr><td><b>S_filesystem_type </b></td><td>2fs</td> </tr>*<tr><td><b>S_inodes_count </b></td><td>278</td> </tr>
-<tr><td><b>S_blocks_count </b></td><td>834</td> </tr>
-<tr><td><b>S_free_blocks_count</b></td><td>834</td> </tr>
-<tr><td><b>S_free_inodes_count</b></td><td>278</td> </tr>
-<tr><td><b>S_mtime</b></td><td>14/03/2024 04:13:52</td> </tr>
-<tr><td><b>S_umtime</b></td><td>0</td> </tr>
+<tr> <td bgcolor="green"><b>S_filesystem_type </b></td><td bgcolor="green">2</td> </tr>*<tr><td><b>S_inodes_count </b></td><td>288</td> </tr>
+<tr><td bgcolor="green"><b>S_blocks_count </b></td><td bgcolor="green">864</td> </tr>
+<tr><td><b>S_free_blocks_count</b></td><td>859</td> </tr>
+<tr><td bgcolor="green"><b>S_free_inodes_count</b></td><td bgcolor="green">283</td> </tr>
+<tr><td><b>S_mtime</b></td><td>14/03/2024 18:24:58</td> </tr>
+<tr><td bgcolor="green"><b>S_umtime</b></td><td bgcolor="green">14/03/2024 18:24:58</td> </tr>
 <tr><td><b>S_mnt_count</b></td><td>1</td> </tr>
-<tr><td><b>S_magic</b></td><td>0xEF53</td> </tr>
-<tr><td><b>S_inode_size</b></td><td>900</td> </tr>
-<tr><td><b>Sb_date_ultimo_montaje</b></td><td>64</td> </tr>
+<tr><td bgcolor="green"><b>S_magic</b></td><td bgcolor="green">0xEF53</td> </tr>
+<tr><td><b>S_inode_size</b></td><td>864</td> </tr>
+<tr><td bgcolor="green"><b>Sb_date_ultimo_montaje</b></td><td bgcolor="green">64</td> </tr>
 <tr><td><b>S_firts_ino</b></td><td>0</td> </tr>
-<tr><td><b>S_first_blo</b></td><td>0</td> </tr>
-<tr><td><b>S_bm_inode_start</b></td><td>1700</td> </tr>
-<tr><td><b>S_bm_block_start</b></td><td>1978</td> </tr>
-<tr><td><b>S_inode_start</b></td><td>2812</td> </tr>
-<tr><td><b>S_block_start</b></td><td>253012</td> </tr>
+<tr><td bgcolor="green"><b>S_first_blo</b></td><td bgcolor="green">0</td> </tr>
+<tr><td><b>S_bm_inode_start</b></td><td>5876</td> </tr>
+<tr><td bgcolor="green"><b>S_bm_block_start</b></td><td bgcolor="green">6165</td> </tr>
+<tr><td><b>S_inode_start</b></td><td>7030</td> </tr>
+<tr><td bgcolor="green"><b>S_block_start</b></td><td bgcolor="green">255863</td> </tr>
 </table>
 >];
 }}

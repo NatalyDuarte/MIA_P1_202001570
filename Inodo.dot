@@ -1,0 +1,67 @@
+digraph G{
+subgraph cluster_0{
+ label="Inodo0"
+tbl_0[shape=box, label=<
+<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
+<tr><td width='150' bgcolor="pink"><b>I_uid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_gid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_size</b></td><td width='150' bgcolor="pink">27</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_atime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_ctime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_mtime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_type</b></td><td width='150' bgcolor="pink">0</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_perm</b></td><td width='150' bgcolor="pink">664</td></tr>
+</table>>];}
+subgraph cluster_1{
+ label="Inodo1"
+tbl_1[shape=box, label=<
+<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
+<tr><td width='150' bgcolor="pink"><b>I_uid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_gid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_size</b></td><td width='150' bgcolor="pink">27</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_atime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_ctime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_mtime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_type</b></td><td width='150' bgcolor="pink">0</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_perm</b></td><td width='150' bgcolor="pink">664</td></tr>
+</table>>];}
+subgraph cluster_2{
+ label="Inodo2"
+tbl_2[shape=box, label=<
+<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
+<tr><td width='150' bgcolor="pink"><b>I_uid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_gid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_size</b></td><td width='150' bgcolor="pink">27</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_atime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_ctime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_mtime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_type</b></td><td width='150' bgcolor="pink">0</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_perm</b></td><td width='150' bgcolor="pink">664</td></tr>
+</table>>];}
+subgraph cluster_3{
+ label="Inodo3"
+tbl_3[shape=box, label=<
+<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
+<tr><td width='150' bgcolor="pink"><b>I_uid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_gid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_size</b></td><td width='150' bgcolor="pink">27</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_atime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_ctime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_mtime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_type</b></td><td width='150' bgcolor="pink">0</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_perm</b></td><td width='150' bgcolor="pink">664</td></tr>
+</table>>];}
+subgraph cluster_4{
+ label="Inodo4"
+tbl_4[shape=box, label=<
+<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
+<tr><td width='150' bgcolor="pink"><b>I_uid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_gid</b></td><td width='150' bgcolor="pink">1</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_size</b></td><td width='150' bgcolor="pink">27</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_atime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_ctime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_mtime</b></td><td width='150' bgcolor="pink">"14/03/2024 18:24:58"</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_type</b></td><td width='150' bgcolor="pink">0</td></tr>
+<tr><td width='150' bgcolor="pink"><b>I_perm</b></td><td width='150' bgcolor="pink">664</td></tr>
+</table>>];}
+}

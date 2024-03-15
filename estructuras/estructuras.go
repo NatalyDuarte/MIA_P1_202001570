@@ -61,7 +61,7 @@ type Inodo = struct {
 	I_atime [100]byte
 	I_ctime [100]byte
 	I_mtime [100]byte
-	I_block [100]byte
+	I_block [16]int32
 	I_type  [100]byte
 	I_perm  [100]byte
 }
@@ -71,10 +71,10 @@ type Bloque_carpeta = struct {
 }
 
 type Cotent = struct {
-	B_name  [100]byte
-	B_inodo [100]byte
+	B_name  [12]byte
+	B_inodo int32
 }
 
 type Bloque_archivo = struct {
-	B_content [100]byte
+	B_content [64]byte
 }
