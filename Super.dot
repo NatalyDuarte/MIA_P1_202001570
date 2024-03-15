@@ -3,22 +3,22 @@ subgraph cluster{
 label="Super Bloque"
 tbl[shape=box,label=<
 <table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >
-<tr> <td bgcolor="green"><b>S_filesystem_type </b></td><td bgcolor="green">2</td> </tr>*<tr><td><b>S_inodes_count </b></td><td>288</td> </tr>
-<tr><td bgcolor="green"><b>S_blocks_count </b></td><td bgcolor="green">864</td> </tr>
-<tr><td><b>S_free_blocks_count</b></td><td>859</td> </tr>
-<tr><td bgcolor="green"><b>S_free_inodes_count</b></td><td bgcolor="green">283</td> </tr>
-<tr><td><b>S_mtime</b></td><td>14/03/2024 18:24:58</td> </tr>
-<tr><td bgcolor="green"><b>S_umtime</b></td><td bgcolor="green">14/03/2024 18:24:58</td> </tr>
-<tr><td><b>S_mnt_count</b></td><td>1</td> </tr>
+<tr> <td bgcolor="green"><b>S_filesystem_type </b></td><td bgcolor="green">2</td> </tr>*<tr><td><b>S_inodes_count </b></td><td>273</td> </tr>
+<tr><td bgcolor="green"><b>S_blocks_count </b></td><td bgcolor="green">819</td> </tr>
+<tr><td><b>S_free_blocks_count</b></td><td>817</td> </tr>
+<tr><td bgcolor="green"><b>S_free_inodes_count</b></td><td bgcolor="green">271</td> </tr>
+<tr><td><b>S_mtime</b></td><td>15/03/2024 03:03:53</td> </tr>
+<tr><td bgcolor="green"><b>S_umtime</b></td><td bgcolor="green"></td> </tr>
+<tr><td><b>S_mnt_count</b></td><td>0</td> </tr>
 <tr><td bgcolor="green"><b>S_magic</b></td><td bgcolor="green">0xEF53</td> </tr>
-<tr><td><b>S_inode_size</b></td><td>864</td> </tr>
-<tr><td bgcolor="green"><b>Sb_date_ultimo_montaje</b></td><td bgcolor="green">64</td> </tr>
-<tr><td><b>S_firts_ino</b></td><td>0</td> </tr>
-<tr><td bgcolor="green"><b>S_first_blo</b></td><td bgcolor="green">0</td> </tr>
-<tr><td><b>S_bm_inode_start</b></td><td>5876</td> </tr>
-<tr><td bgcolor="green"><b>S_bm_block_start</b></td><td bgcolor="green">6165</td> </tr>
-<tr><td><b>S_inode_start</b></td><td>7030</td> </tr>
-<tr><td bgcolor="green"><b>S_block_start</b></td><td bgcolor="green">255863</td> </tr>
+<tr><td><b>S_inode_size</b></td><td>815</td> </tr>
+<tr><td bgcolor="green"><b>Sb_date_ultimo_montaje</b></td><td bgcolor="green">100</td> </tr>
+<tr><td><b>S_firts_ino</b></td><td>2</td> </tr>
+<tr><td bgcolor="green"><b>S_first_blo</b></td><td bgcolor="green">2</td> </tr>
+<tr><td><b>S_bm_inode_start</b></td><td>5875</td> </tr>
+<tr><td bgcolor="green"><b>S_bm_block_start</b></td><td bgcolor="green">6148</td> </tr>
+<tr><td><b>S_inode_start</b></td><td>6967</td> </tr>
+<tr><td bgcolor="green"><b>S_block_start</b></td><td bgcolor="green">8055</td> </tr>
 </table>
 >];
 }}

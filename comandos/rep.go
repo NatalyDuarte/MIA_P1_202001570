@@ -98,6 +98,14 @@ func Rep(arre_coman []string) {
 						ReporteSb(val_path, val_id)
 					} else if val_name == "inode" {
 						ReporteInode(val_path, val_id)
+					} else if val_name == "block" {
+						ReporteBloque(val_path, val_id)
+					} else if val_name == "bm_inode" {
+						ReporteBmInode(val_path, val_id)
+					} else if val_name == "bm_block" {
+						ReporteBmBlock(val_path, val_id)
+					} else if val_name == "tree" {
+						ReporteTree(val_path, val_id)
 					}
 				} else {
 					fmt.Println("Error: No se encontro el id")
@@ -769,13 +777,12 @@ func ReporteInode(path string, id string) {
 				s_inodo_mtime = strings.Trim(s_inodo_mtime, "\x00")
 				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_mtime" + "</b></td><td width='150' bgcolor=\"pink\">\"" + s_inodo_mtime + "\"</td></tr>\n"
 				// bloques
-				/*
-					for i := 1; i < 16; i++ {
-						s_inodo_bloc := string(inodos.I_block[i])
-						s_inodo_bloc = strings.Trim(s_inodo_bloc, "\x00")
-						buffer += "<tr>  <td width='150' bgcolor=\"pink\"><b>I_bloc" + strconv.Itoa(i) + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_bloc + "</td>  </tr>\n"
+				for i := 1; i < 15; i++ {
+					s_inodo_bloc := string(inodos.I_block[i])
+					s_inodo_bloc = strings.Trim(s_inodo_bloc, "\x00")
+					buffer += "<tr>  <td width='150' bgcolor=\"pink\"><b>I_bloc" + strconv.Itoa(i) + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_bloc + "</td>  </tr>\n"
 
-					}*/
+				}
 				s_inodo_type := string(inodos.I_type[:])
 				s_inodo_type = strings.Trim(s_inodo_type, "\x00")
 				buffer += "<tr><td width='150' bgcolor=\"pink\"><b>I_type" + "</b></td><td width='150' bgcolor=\"pink\">" + s_inodo_type + "</td></tr>\n"
@@ -830,4 +837,612 @@ func leerInodos(start int64, pathDisco string) estructuras.Inodo {
 
 	return inodo
 
+}
+
+func ReporteBloque(path string, id string) {
+	carpeta := ""
+	archivo := ""
+	regex := regexp.MustCompile(`^[a-zA-Z]+`)
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			carpeta = path[:i]
+			archivo = path[i+1:]
+			break
+		}
+	}
+
+	fmt.Println("Carpeta:", carpeta)
+	fmt.Println("Archivo:", archivo)
+	letters := regex.FindString(id)
+	fmt.Println("Disco:", letters)
+
+	val_rutadis = val_rutadis + letters + ".dsk"
+
+	_, err := os.Stat(carpeta)
+
+	// Si la carpeta no existe, crearla
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(carpeta, 0755)
+			if err != nil {
+				fmt.Println("Error al crear la carpeta:", err)
+				return
+			}
+		} else {
+			fmt.Println("Error al verificar la carpeta:", err)
+			return
+		}
+	}
+	fmt.Println("La carpeta", carpeta, "ya existe o se ha creado correctamente")
+	mbr := estructuras.Mbr{}
+	sb := estructuras.Super_bloque{}
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+	var empty [100]byte
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+	if mbr.Mbr_tamano != empty {
+
+	}
+	var buffer string
+	numero_parti := 0
+	band_crea := false
+	for i := 0; i < 4; i++ {
+		s_part_id := string(mbr.Mbr_partition[i].Part_id[:])
+		s_part_id = strings.Trim(s_part_id, "\x00")
+
+		if s_part_id == id {
+			numero_parti = i
+			band_crea = true
+			break
+		}
+
+	}
+
+	if band_crea {
+		s_part_startas := string(mbr.Mbr_partition[numero_parti].Part_start[:])
+		s_part_startas = strings.Trim(s_part_startas, "\x00")
+		part_starta, err := strconv.Atoi(s_part_startas)
+		if err != nil {
+			Mens_error(err)
+		}
+
+		disco.Seek(int64(part_starta), 0)
+		err = binary.Read(disco, binary.BigEndian, &sb)
+		if sb.S_filesystem_type != empty {
+			s_blocks_count := string(sb.S_blocks_count[:])
+			s_blocks_count = strings.Trim(s_blocks_count, "\x00")
+			numero_block, err := strconv.Atoi(s_blocks_count)
+			if err != nil {
+				Mens_error(err)
+			}
+			s_free_blocks := string(sb.S_free_blocks_count[:])
+			s_free_blocks = strings.Trim(s_free_blocks, "\x00")
+			numero_block_libres, err := strconv.Atoi(s_free_blocks)
+			if err != nil {
+				Mens_error(err)
+			}
+
+			s_block_start := string(sb.S_block_start[:])
+			s_block_start = strings.Trim(s_block_start, "\x00")
+			start_block, err := strconv.Atoi(s_block_start)
+			if err != nil {
+				Mens_error(err)
+			}
+
+			numero_block_uso := numero_block - numero_block_libres
+			buffer += "digraph G{\n"
+			for c := 0; c < int(numero_block_uso); c++ {
+				blocks, tipo := leerBloques(int64(start_block), val_rutadis)
+				fmt.Println(tipo)
+				switch b := blocks.(type) {
+				case estructuras.Bloque_archivo:
+					buffer += "subgraph cluster_" + strconv.Itoa(c) + "{\n label=\"Bloque Archivo" + strconv.Itoa(c) + "\"\ntbl_" + strconv.Itoa(c) + "[shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
+					s_block_cont := string(b.B_content[:])
+					s_block_cont = strings.Trim(s_block_cont, "\x00")
+					buffer += "<tr><td width='150' bgcolor=\"pink\"><b>B_content" + "</b></td><td width='150' bgcolor=\"pink\">" + s_block_cont + "</td></tr>\n"
+					buffer += "</table>>];}\n"
+				case estructuras.Bloque_carpeta:
+					buffer += "subgraph cluster_" + strconv.Itoa(c) + "{\n label=\"Bloque Archivo" + strconv.Itoa(c) + "\"\ntbl_" + strconv.Itoa(c) + "[shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
+					for _, c := range b.B_content {
+						s_block_name := string(c.B_name[:])
+						s_block_name = strings.Trim(s_block_name, "\x00")
+						buffer += "<tr><td width='150' bgcolor=\"pink\"><b>B_name" + "</b></td><td width='150' bgcolor=\"pink\">" + s_block_name + "</td></tr>\n"
+						s_block_inodo := string(c.B_inodo[:])
+						s_block_inodo = strings.Trim(s_block_inodo, "\x00")
+						buffer += "<tr><td width='150' bgcolor=\"pink\"><b>B_inodo" + "</b></td><td width='150' bgcolor=\"pink\">" + s_block_inodo + "</td></tr>\n"
+					}
+					buffer += "</table>>];}\n"
+				default:
+					fmt.Println("Tipo desconocido")
+				}
+
+			}
+			buffer += "}\n"
+			file, err2 := os.Create("Bloques.dot")
+			if err2 != nil && !os.IsExist(err) {
+				log.Fatal(err2)
+			}
+			defer file.Close()
+
+			err = os.Chmod("Bloques.dot", 0777)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+
+			_, err = file.WriteString(buffer)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+			cmd := exec.Command("dot", "-Tpng", "Bloques.dot", "-o", path)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Errorf("no se pudo generar la imagen: %v", err)
+			}
+			val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+			fmt.Println("Reporte Bloques creado exitosamente")
+		}
+
+	}
+
+}
+func leerBloques(start int64, pathDisco string) (interface{}, int) {
+	file, err := os.Open(pathDisco)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	file.Seek(start, 0)
+
+	var char byte
+	err = binary.Read(file, binary.LittleEndian, &char)
+	if err != nil {
+		panic(err)
+	}
+	if char != '.' {
+		file.Seek(start, 0)
+
+		bloque_archivo := estructuras.Bloque_archivo{}
+		err = binary.Read(file, binary.LittleEndian, &bloque_archivo.B_content)
+		if err != nil {
+			panic(err)
+		}
+		return bloque_archivo, 0
+	} else {
+		file.Seek(start, 0)
+
+		bloque_carpeta := estructuras.Bloque_carpeta{}
+
+		for c := 0; c < 4; c++ {
+			err = binary.Read(file, binary.LittleEndian, &bloque_carpeta.B_content[c].B_name)
+			err = binary.Read(file, binary.LittleEndian, &bloque_carpeta.B_content[c].B_inodo)
+			if err != nil {
+				panic(err)
+			}
+		}
+		return bloque_carpeta, 1
+	}
+}
+
+func ReporteBmInode(path string, id string) {
+	carpeta := ""
+	archivo := ""
+	regex := regexp.MustCompile(`^[a-zA-Z]+`)
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			carpeta = path[:i]
+			archivo = path[i+1:]
+			break
+		}
+	}
+
+	fmt.Println("Carpeta:", carpeta)
+	fmt.Println("Archivo:", archivo)
+	letters := regex.FindString(id)
+	fmt.Println("Disco:", letters)
+
+	val_rutadis = val_rutadis + letters + ".dsk"
+
+	_, err := os.Stat(carpeta)
+
+	// Si la carpeta no existe, crearla
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(carpeta, 0755)
+			if err != nil {
+				fmt.Println("Error al crear la carpeta:", err)
+				return
+			}
+		} else {
+			fmt.Println("Error al verificar la carpeta:", err)
+			return
+		}
+	}
+	fmt.Println("La carpeta", carpeta, "ya existe o se ha creado correctamente")
+	mbr := estructuras.Mbr{}
+	sb := estructuras.Super_bloque{}
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+	var empty [100]byte
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+	if mbr.Mbr_tamano != empty {
+
+	}
+	var buffer string
+	numero_parti := 0
+	band_crea := false
+	for i := 0; i < 4; i++ {
+		s_part_id := string(mbr.Mbr_partition[i].Part_id[:])
+		s_part_id = strings.Trim(s_part_id, "\x00")
+
+		if s_part_id == id {
+			numero_parti = i
+			band_crea = true
+			break
+		}
+
+	}
+
+	if band_crea {
+		s_part_startas := string(mbr.Mbr_partition[numero_parti].Part_start[:])
+		s_part_startas = strings.Trim(s_part_startas, "\x00")
+		part_starta, err := strconv.Atoi(s_part_startas)
+		if err != nil {
+			Mens_error(err)
+		}
+		disco.Seek(int64(part_starta), 0)
+		err = binary.Read(disco, binary.BigEndian, &sb)
+		if sb.S_filesystem_type != empty {
+			s_inodos_count := string(sb.S_inodes_count[:])
+			s_inodos_count = strings.Trim(s_inodos_count, "\x00")
+			numero_inodos, err := strconv.Atoi(s_inodos_count)
+			if err != nil {
+				Mens_error(err)
+			}
+			s_start_bit := string(sb.S_bm_inode_start[:])
+			s_start_bit = strings.Trim(s_start_bit, "\x00")
+			inodos, err := strconv.Atoi(s_start_bit)
+			if err != nil {
+				Mens_error(err)
+			}
+			buffer += "digraph G{\n"
+			buffer += "subgraph cluster_s {\n label=\"Inodo\"\ntbl_s [shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
+			pos := 0
+			buffer += "<tr><td width='150' bgcolor=\"pink\">"
+			for c := 0; c < numero_inodos; c++ {
+				disco.Seek(int64(inodos), 0)
+				var char byte
+				err = binary.Read(disco, binary.LittleEndian, &char)
+				if err != nil {
+					panic(err)
+				}
+
+				val := string(char)
+
+				if pos < 20 {
+					buffer += val + ""
+					pos++
+				} else {
+					buffer += "</td></tr>\n"
+					buffer += "<tr><td width='150' bgcolor=\"pink\">" + val + " "
+					pos = 1
+				}
+
+				inodos++
+
+			}
+			buffer += "</td></tr>\n"
+			buffer += "</table>>];}\n"
+			buffer += "}\n"
+			file, err2 := os.Create("Inodobt.dot")
+			if err2 != nil && !os.IsExist(err) {
+				log.Fatal(err2)
+			}
+			defer file.Close()
+
+			err = os.Chmod("Inodobt.dot", 0777)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+
+			_, err = file.WriteString(buffer)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+			cmd := exec.Command("dot", "-Tpng", "Inodobt.dot", "-o", path)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Errorf("no se pudo generar la imagen: %v", err)
+			}
+			val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+			fmt.Println("Reporte de Bitmap Inodo creado exitosamente")
+		}
+	}
+}
+
+func ReporteBmBlock(path string, id string) {
+	carpeta := ""
+	archivo := ""
+	regex := regexp.MustCompile(`^[a-zA-Z]+`)
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			carpeta = path[:i]
+			archivo = path[i+1:]
+			break
+		}
+	}
+
+	fmt.Println("Carpeta:", carpeta)
+	fmt.Println("Archivo:", archivo)
+	letters := regex.FindString(id)
+	fmt.Println("Disco:", letters)
+
+	val_rutadis = val_rutadis + letters + ".dsk"
+
+	_, err := os.Stat(carpeta)
+
+	// Si la carpeta no existe, crearla
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(carpeta, 0755)
+			if err != nil {
+				fmt.Println("Error al crear la carpeta:", err)
+				return
+			}
+		} else {
+			fmt.Println("Error al verificar la carpeta:", err)
+			return
+		}
+	}
+	fmt.Println("La carpeta", carpeta, "ya existe o se ha creado correctamente")
+	mbr := estructuras.Mbr{}
+	sb := estructuras.Super_bloque{}
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+	var empty [100]byte
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+	if mbr.Mbr_tamano != empty {
+
+	}
+	var buffer string
+	numero_parti := 0
+	band_crea := false
+	for i := 0; i < 4; i++ {
+		s_part_id := string(mbr.Mbr_partition[i].Part_id[:])
+		s_part_id = strings.Trim(s_part_id, "\x00")
+
+		if s_part_id == id {
+			numero_parti = i
+			band_crea = true
+			break
+		}
+
+	}
+
+	if band_crea {
+		s_part_startas := string(mbr.Mbr_partition[numero_parti].Part_start[:])
+		s_part_startas = strings.Trim(s_part_startas, "\x00")
+		part_starta, err := strconv.Atoi(s_part_startas)
+		if err != nil {
+			Mens_error(err)
+		}
+		disco.Seek(int64(part_starta), 0)
+		err = binary.Read(disco, binary.BigEndian, &sb)
+		if sb.S_filesystem_type != empty {
+			s_blocks_count := string(sb.S_blocks_count[:])
+			s_blocks_count = strings.Trim(s_blocks_count, "\x00")
+			numero_blocks, err := strconv.Atoi(s_blocks_count)
+			if err != nil {
+				Mens_error(err)
+			}
+			s_start_blocks := string(sb.S_bm_block_start[:])
+			s_start_blocks = strings.Trim(s_start_blocks, "\x00")
+			blocks, err := strconv.Atoi(s_start_blocks)
+			if err != nil {
+				Mens_error(err)
+			}
+			buffer += "digraph G{\n"
+			buffer += "subgraph cluster_s {\n label=\"Blocks\"\ntbl_s [shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
+			pos := 0
+			buffer += "<tr><td width='150' bgcolor=\"pink\">"
+			for c := 0; c < numero_blocks; c++ {
+				disco.Seek(int64(blocks), 0)
+				var char byte
+				err = binary.Read(disco, binary.LittleEndian, &char)
+				if err != nil {
+					panic(err)
+				}
+
+				val := string(char)
+
+				if pos < 20 {
+					buffer += val + ""
+					pos++
+				} else {
+					buffer += "</td></tr>\n"
+					buffer += "<tr><td width='150' bgcolor=\"pink\">" + val + " "
+					pos = 1
+				}
+
+				blocks++
+
+			}
+			buffer += "</td></tr>\n"
+			buffer += "</table>>];}\n"
+			buffer += "}\n"
+			file, err2 := os.Create("Bloquesbt.dot")
+			if err2 != nil && !os.IsExist(err) {
+				log.Fatal(err2)
+			}
+			defer file.Close()
+
+			err = os.Chmod("Bloquesbt.dot", 0777)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+
+			_, err = file.WriteString(buffer)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+			cmd := exec.Command("dot", "-Tpng", "Bloquesbt.dot", "-o", path)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Errorf("no se pudo generar la imagen: %v", err)
+			}
+			val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+			fmt.Println("Reporte de Bitmap Bloques creado exitosamente")
+		}
+	}
+}
+
+func ReporteTree(path string, id string) {
+	carpeta := ""
+	archivo := ""
+	regex := regexp.MustCompile(`^[a-zA-Z]+`)
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			carpeta = path[:i]
+			archivo = path[i+1:]
+			break
+		}
+	}
+
+	fmt.Println("Carpeta:", carpeta)
+	fmt.Println("Archivo:", archivo)
+	letters := regex.FindString(id)
+	fmt.Println("Disco:", letters)
+
+	val_rutadis = val_rutadis + letters + ".dsk"
+
+	_, err := os.Stat(carpeta)
+
+	// Si la carpeta no existe, crearla
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(carpeta, 0755)
+			if err != nil {
+				fmt.Println("Error al crear la carpeta:", err)
+				return
+			}
+		} else {
+			fmt.Println("Error al verificar la carpeta:", err)
+			return
+		}
+	}
+	fmt.Println("La carpeta", carpeta, "ya existe o se ha creado correctamente")
+	mbr := estructuras.Mbr{}
+	sb := estructuras.Super_bloque{}
+	disco, err := os.OpenFile(val_rutadis, os.O_RDWR, 0660)
+	var empty [100]byte
+	if err != nil {
+		Mens_error(err)
+	}
+	defer func() {
+		disco.Close()
+	}()
+	disco.Seek(0, 0)
+	err = binary.Read(disco, binary.BigEndian, &mbr)
+	if mbr.Mbr_tamano != empty {
+
+	}
+	var buffer string
+	numero_parti := 0
+	band_crea := false
+	for i := 0; i < 4; i++ {
+		s_part_id := string(mbr.Mbr_partition[i].Part_id[:])
+		s_part_id = strings.Trim(s_part_id, "\x00")
+
+		if s_part_id == id {
+			numero_parti = i
+			band_crea = true
+			break
+		}
+
+	}
+
+	if band_crea {
+		s_part_startas := string(mbr.Mbr_partition[numero_parti].Part_start[:])
+		s_part_startas = strings.Trim(s_part_startas, "\x00")
+		part_starta, err := strconv.Atoi(s_part_startas)
+		if err != nil {
+			Mens_error(err)
+		}
+		disco.Seek(int64(part_starta), 0)
+		err = binary.Read(disco, binary.BigEndian, &sb)
+		if sb.S_filesystem_type != empty {
+			buffer += "digraph grafica{\nrankdir=TB;\nnode [shape = record, style=filled, fillcolor=seashell2];\n"
+			buffer += "subgraph cluster_s {\n label=\"Blocks\"\ntbl_s [shape=box, label=<\n"
+			s_inodo_start := string(sb.S_inode_start[:])
+			s_inodo_start = strings.Trim(s_inodo_start, "\x00")
+			part_starta, err := strconv.Atoi(s_inodo_start)
+			if err != nil {
+				Mens_error(err)
+			}
+			s_block_start := string(sb.S_block_start[:])
+			s_block_start = strings.Trim(s_block_start, "\x00")
+			/*part_blocksta, err := strconv.Atoi(s_block_start)
+			if err != nil {
+				Mens_error(err)
+			}*/
+			inodo := leerInodos(int64(part_starta), val_rutadis)
+			etiquetaInicio := "<TABLE>"
+			etiquetaFinal := "</TABLE>"
+
+			// Crear el primer nodo del inodo en graphviz
+			celdas := ""
+			celdas += "<tr> <td colspan=\"2\" bgcolor=\"yellow\">Inodo 1</td> </tr>"
+			pos := 1
+			for _, c := range inodo.I_block {
+				celdas += fmt.Sprintf(`<tr>
+					<td>apt: %d</td>
+					<td>%d</td>
+				</tr>`, pos, c)
+				pos++
+			}
+			buffer += etiquetaInicio + celdas + etiquetaFinal
+			buffer += ">];}\n"
+			buffer += "}\n"
+			file, err2 := os.Create("Tree.dot")
+			if err2 != nil && !os.IsExist(err) {
+				log.Fatal(err2)
+			}
+			defer file.Close()
+
+			err = os.Chmod("Tree.dot", 0777)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+
+			_, err = file.WriteString(buffer)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal(err)
+			}
+			cmd := exec.Command("dot", "-Tpng", "Tree.dot", "-o", path)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Errorf("no se pudo generar la imagen: %v", err)
+			}
+			val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
+			fmt.Println("Reporte de Arbol creado exitosamente")
+		}
+	}
 }

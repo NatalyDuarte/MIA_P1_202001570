@@ -3,7 +3,7 @@ package comandos
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
+	"io"
 	"mimodulo/estructuras"
 	"os"
 	"regexp"
@@ -141,140 +141,169 @@ func Formatearext2(val_path string, val_id string) {
 		}
 		InicioParti := string(mbr.Mbr_partition[posicion].Part_start[:])
 		InicioParti = strings.Trim(InicioParti, "\x00")
-		iniciopartis, err := strconv.Atoi(InicioParti)
+		inicio, err := strconv.Atoi(InicioParti)
 		if err != nil {
 			fmt.Println("Error: No se pudo convertir el inicio de la particion")
 		}
-		superbloque := estructuras.Super_bloque{}
-		inodos := estructuras.Inodo{}
-		block := 64
-		n := (float64(tamanioparti) - float64(unsafe.Sizeof(superbloque))) / (4 + float64(unsafe.Sizeof(inodos)) + 3*float64(block))
-		numero_estructuras := math.Floor(n)
-		stmine := time.Now().Format("02/01/2006 15:04:05")
-		//Superbloque
-		copy(superbloque.S_filesystem_type[:], "2")
-		copy(superbloque.S_inodes_count[:], []byte(strconv.Itoa(int(numero_estructuras))))
-		copy(superbloque.S_blocks_count[:], []byte(strconv.Itoa(int(numero_estructuras*3))))
-		copy(superbloque.S_free_blocks_count[:], []byte(strconv.Itoa(int((numero_estructuras*3)-5))))
-		copy(superbloque.S_free_inodes_count[:], []byte(strconv.Itoa(int(numero_estructuras-5))))
-		copy(superbloque.S_mtime[:], []byte(stmine))
-		copy(superbloque.S_umtime[:], []byte(stmine))
-		copy(superbloque.S_mnt_count[:], []byte("1"))
-		copy(superbloque.S_magic[:], []byte("0xEF53"))
-		copy(superbloque.S_inode_size[:], []byte(strconv.Itoa(int(unsafe.Sizeof(inodos)))))
-		copy(superbloque.S_block_size[:], []byte(strconv.Itoa(block)))
-		copy(superbloque.S_firts_ino[:], []byte("0"))
-		copy(superbloque.S_first_blo[:], []byte("0"))
-		startBitmapInodes := iniciopartis + int(unsafe.Sizeof(estructuras.Super_bloque{})) + 1
-		copy(superbloque.S_bm_inode_start[:], []byte(strconv.Itoa(int(startBitmapInodes))))
-		startBitmapBloks := startBitmapInodes + int(numero_estructuras) + 1
-		copy(superbloque.S_bm_block_start[:], []byte(strconv.Itoa(int(startBitmapBloks))))
-		firstInodeFree := startBitmapBloks + int(3*numero_estructuras) + 1
-		firstBlockFree := firstInodeFree + int(n)*int(unsafe.Sizeof(estructuras.Inodo{})) + 1
-		copy(superbloque.S_inode_start[:], []byte(strconv.Itoa(int(firstInodeFree))))
-		copy(superbloque.S_block_start[:], []byte(strconv.Itoa((int(firstBlockFree)))))
-		//Escribir Superbloque
-		disco.Seek(int64(iniciopartis), 0)
-		err = binary.Write(disco, binary.BigEndian, &superbloque)
+		sb_empty := estructuras.Super_bloque{}
 
-		//Bitmap de inodos
-		var buffer, buffer2 byte
-		buffer = '0'
-		buffer2 = '1'
-		for i := 0; i < int(n); i++ {
-			pos := int(startBitmapInodes) + i
-			disco.Seek(int64(pos), 0)
-			err = binary.Write(disco, binary.LittleEndian, &buffer)
-			if err != nil {
-				fmt.Println("Error: Error al escribir el bitmapInodes:", err)
+		in_empty := estructuras.Inodo{}
+
+		ba_empty := estructuras.Bloque_archivo{}
+
+		n := (int64(tamanioparti) - int64(unsafe.Sizeof(sb_empty))) / (4 + int64(unsafe.Sizeof(in_empty)) + 3*int64(unsafe.Sizeof(ba_empty)))
+		num_estructuras := n
+		num_bloques := 3 * num_estructuras
+
+		Super_bloque := estructuras.Super_bloque{}
+
+		fecha := time.Now()
+		str_fecha := fecha.Format("02/01/2006 15:04:05")
+
+		copy(Super_bloque.S_filesystem_type[:], "2")
+		copy(Super_bloque.S_inodes_count[:], strconv.Itoa(int(num_estructuras)))
+		copy(Super_bloque.S_blocks_count[:], strconv.Itoa(int(num_bloques)))
+		copy(Super_bloque.S_free_blocks_count[:], strconv.Itoa(int(num_bloques-2)))
+		copy(Super_bloque.S_free_inodes_count[:], strconv.Itoa(int(num_estructuras-2)))
+		copy(Super_bloque.S_mtime[:], str_fecha)
+		copy(Super_bloque.S_mnt_count[:], "0")
+		copy(Super_bloque.S_magic[:], "0xEF53")
+		copy(Super_bloque.S_inode_size[:], strconv.Itoa(int(unsafe.Sizeof(in_empty))))
+		copy(Super_bloque.S_block_size[:], strconv.Itoa(int(unsafe.Sizeof(ba_empty))))
+		copy(Super_bloque.S_firts_ino[:], "2")
+		copy(Super_bloque.S_first_blo[:], "2")
+		copy(Super_bloque.S_bm_inode_start[:], strconv.Itoa(inicio+int(unsafe.Sizeof(sb_empty))))
+		copy(Super_bloque.S_bm_block_start[:], strconv.Itoa(inicio+int(unsafe.Sizeof(sb_empty))+int(num_estructuras)))
+		copy(Super_bloque.S_inode_start[:], strconv.Itoa(inicio+int(unsafe.Sizeof(sb_empty))+int(num_estructuras)+int(num_bloques)))
+		copy(Super_bloque.S_block_start[:], strconv.Itoa(inicio+int(unsafe.Sizeof(sb_empty))+int(num_estructuras)+int(num_bloques)+int(unsafe.Sizeof(in_empty))+int(num_estructuras)))
+
+		inodo := estructuras.Inodo{}
+		bloque := estructuras.Bloque_carpeta{}
+
+		// Libre
+		buffer := "0"
+		// Usado o archivo
+		buffer2 := "1"
+		// Carpeta
+		buffer3 := "2"
+
+		if err == nil {
+			// Super Bloque
+			disco.Seek(int64(inicio), io.SeekStart)
+			err = binary.Write(disco, binary.BigEndian, &Super_bloque)
+
+			s_bm_inode_start := string(Super_bloque.S_bm_inode_start[:])
+			s_bm_inode_start = strings.Trim(s_bm_inode_start, "\x00")
+			i_bm_inode_start, _ := strconv.Atoi(s_bm_inode_start)
+
+			for i := 0; i < int(num_estructuras); i++ {
+				disco.Seek(int64(i_bm_inode_start+i), io.SeekStart)
+				disco.Write([]byte(buffer))
 			}
-		}
-		//insertamos los inodos usados para user.txt
-		disco.Seek(int64(int(startBitmapInodes)), 0)
-		err = binary.Write(disco, binary.LittleEndian, &buffer2)
-		if err != nil {
-			fmt.Println("Error: Error al escribir un inodo en bitmapInodes:", err)
-		}
-		disco.Seek(int64(int(startBitmapInodes)+1), 0)
-		err = binary.Write(disco, binary.LittleEndian, &buffer2)
-		if err != nil {
-			fmt.Println("Error: Error al escribir un inodo en bitmapInodes:", err)
-		}
-		//Inodo para la carpeta root
-		inodoRoot := estructuras.Inodo{}
-		stmin := time.Now().Format("02/01/2006 15:04:05")
-		copy(inodoRoot.I_uid[:], []byte("1"))
-		copy(inodoRoot.I_gid[:], []byte("1"))
-		copy(inodoRoot.I_size[:], []byte("27"))
-		copy(inodoRoot.I_atime[:], []byte(stmin))
-		copy(inodoRoot.I_ctime[:], []byte(stmin))
-		copy(inodoRoot.I_mtime[:], []byte(stmin))
-		inodoRoot.I_block[0] = 0
-		for i := 1; i < 16; i++ {
-			inodoRoot.I_block[i] = -1
-		}
-		copy(inodoRoot.I_type[:], []byte("0"))
-		copy(inodoRoot.I_perm[:], []byte("664"))
-		disco.Seek(int64(int(firstInodeFree)), 0)
-		err = binary.Write(disco, binary.LittleEndian, &inodoRoot)
-		if err != nil {
-			fmt.Println("Error: Error al escribir un inodo:", err)
-		}
-		// bloque para la carpeta root
-		blocUser := estructuras.Bloque_carpeta{}
-		blocUser.B_content[0].B_inodo = 0
-		blocUser.B_content[0].B_name[0] = '.'
 
-		blocUser.B_content[1].B_inodo = 0
-		blocUser.B_content[1].B_name[0] = '.'
-		blocUser.B_content[1].B_name[1] = '.'
+			disco.Seek(int64(i_bm_inode_start), io.SeekStart)
+			disco.Write([]byte(buffer2))
+			disco.Write([]byte(buffer2))
 
-		blocUser.B_content[2].B_inodo = 1
-		blocUser.B_content[2].B_name = ReturnValueArr("users.txt")
+			s_bm_block_start := string(Super_bloque.S_bm_block_start[:])
+			s_bm_block_start = strings.Trim(s_bm_block_start, "\x00")
+			i_bm_block_start, _ := strconv.Atoi(s_bm_block_start)
 
-		blocUser.B_content[3].B_inodo = -1
-		blocUser.B_content[3].B_name[0] = '.'
+			for i := 0; i < int(num_bloques); i++ {
+				disco.Seek(int64(i_bm_block_start+i), io.SeekStart)
+				disco.Write([]byte(buffer))
+			}
 
-		disco.Seek(int64(int(firstBlockFree)), 0)
-		err = binary.Write(disco, binary.LittleEndian, &blocUser)
-		if err != nil {
-			fmt.Println("Error: Error al escribir un bloque:", err)
-			return
+			// Marcando el Bitmap de Inodos para la carpeta "/" y el archivo "users.txt"
+			disco.Seek(int64(i_bm_block_start), io.SeekStart)
+			disco.Write([]byte(buffer2))
+			disco.Write([]byte(buffer3))
+
+			/* Inodo para la carpeta "/" */
+			copy(inodo.I_uid[:], "1")
+			copy(inodo.I_gid[:], "1")
+			copy(inodo.I_size[:], "0")
+			copy(inodo.I_atime[:], str_fecha)
+			copy(inodo.I_ctime[:], str_fecha)
+			copy(inodo.I_mtime[:], str_fecha)
+			copy(inodo.I_block[0:1], "0")
+
+			// Nodos libres
+			for i := 1; i < 15; i++ {
+				copy(inodo.I_block[i:i+1], "$")
+			}
+
+			// 1 = archivo o 0 = Carpeta
+			copy(inodo.I_type[:], "0")
+			copy(inodo.I_perm[:], "664")
+
+			s_inode_start := string(Super_bloque.S_inode_start[:])
+			s_inode_start = strings.Trim(s_inode_start, "\x00")
+			i_inode_start, _ := strconv.Atoi(s_inode_start)
+
+			disco.Seek(int64(i_inode_start), io.SeekStart)
+			err = binary.Write(disco, binary.BigEndian, &inodo)
+
+			/* Bloque Para Carpeta "/" */
+			copy(bloque.B_content[0].B_name[:], ".")
+			copy(bloque.B_content[0].B_inodo[:], "0")
+
+			// Directorio Padre
+			copy(bloque.B_content[1].B_name[:], "..")
+			copy(bloque.B_content[1].B_inodo[:], "0")
+
+			// Nombre de la carpeta o archivo
+			copy(bloque.B_content[2].B_name[:], "users.txt")
+			copy(bloque.B_content[2].B_inodo[:], "1")
+			copy(bloque.B_content[3].B_name[:], ".")
+			copy(bloque.B_content[3].B_inodo[:], "-1")
+
+			s_block_start := string(Super_bloque.S_block_start[:])
+			s_block_start = strings.Trim(s_block_start, "\x00")
+			i_block_start, _ := strconv.Atoi(s_block_start)
+
+			disco.Seek(int64(i_block_start), io.SeekStart)
+			err = binary.Write(disco, binary.BigEndian, &bloque)
+
+			/* Inodo Para "users.txt" */
+			copy(inodo.I_uid[:], "1")
+			copy(inodo.I_gid[:], "1")
+			copy(inodo.I_size[:], "29")
+			copy(inodo.I_atime[:], str_fecha)
+			copy(inodo.I_ctime[:], str_fecha)
+			copy(inodo.I_mtime[:], str_fecha)
+			copy(inodo.I_block[0:1], "1")
+
+			// Nodos libres
+			for i := 1; i < 15; i++ {
+				copy(inodo.I_block[i:i+1], "$")
+			}
+
+			copy(inodo.I_type[:], "1")
+			copy(inodo.I_perm[:], "755")
+
+			disco.Seek(int64(i_inode_start+int(unsafe.Sizeof(in_empty))), io.SeekStart)
+			err = binary.Write(disco, binary.BigEndian, &inodo)
+
+			/* Bloque Para "users.txt" */
+			archivo := estructuras.Bloque_archivo{}
+
+			for i := 0; i < 100; i++ {
+				copy(archivo.B_content[i:i+1], "0")
+			}
+
+			bc_empty := estructuras.Bloque_carpeta{}
+
+			// GID, TIPO, GRUPO
+			// UID, TIPO, GRUPO, USUARIO, CONTRASEÑA
+			copy(archivo.B_content[:], "1,G,root\n1,U,root,root,123\n")
+			disco.Seek(int64(i_block_start+int(unsafe.Sizeof(bc_empty))), io.SeekStart)
+			err = binary.Write(disco, binary.BigEndian, &archivo)
+
+			fmt.Println("El Disco se formateo en el sistema EXT2 con exitosamente")
+			disco.Close()
 		}
-		//inodo de tipo archivo para users.txt
-		copy(inodoRoot.I_uid[:], []byte("1"))
-		copy(inodoRoot.I_gid[:], []byte("1"))
-		copy(inodoRoot.I_size[:], []byte("27"))
-		copy(inodoRoot.I_atime[:], []byte(stmin))
-		copy(inodoRoot.I_ctime[:], []byte(stmin))
-		copy(inodoRoot.I_mtime[:], []byte(stmin))
-		inodoRoot.I_block[0] = 1
-		for i := 1; i < 16; i++ {
-			inodoRoot.I_block[i] = -1
-		}
-		copy(inodoRoot.I_type[:], []byte("1"))
-		copy(inodoRoot.I_perm[:], []byte("755"))
-		disco.Seek(int64(int32(firstInodeFree)+int32(unsafe.Sizeof(estructuras.Inodo{}))), 0)
-		err = binary.Write(disco, binary.LittleEndian, &inodoRoot)
-		if err != nil {
-			fmt.Println("Error: Error al escribir un inodo:", err)
-		}
-		//bloque archivo para users.txt
-		blocUserT := estructuras.Bloque_archivo{}
-		blocUserT.B_content = ReturnValueArr64("1,G,root\n1,U,root,root,123\n")
-		disco.Seek(int64(int32(firstBlockFree)+int32(unsafe.Sizeof(estructuras.Bloque_archivo{}))), 0)
-		err = binary.Write(disco, binary.LittleEndian, &blocUserT)
-		if err != nil {
-			fmt.Println("Error: Error al escribir un inodo:", err)
-		}
-		fmt.Println("Ext2 creado exitosamente")
-	} else {
-		fmt.Println("Error: No existe el id")
 	}
-	defer func() {
-		disco.Close()
-	}()
-	disco.Close()
 }
 
 func ReturnValueArr(value string) [12]byte {
