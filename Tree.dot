@@ -2,7 +2,7 @@ digraph grafica{
 rankdir=TB;
 node [shape = record, style=filled, fillcolor=seashell2];
 subgraph cluster_s {
- label="Blocks"
+ label=""
 tbl_s [shape=box, label=<
 <TABLE><tr> <td colspan="2" bgcolor="yellow">Inodo 1</td> </tr><tr>
 					<td>apt: 1</td>

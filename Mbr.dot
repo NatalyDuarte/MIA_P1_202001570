@@ -3,21 +3,42 @@ subgraph cluster{
 label="REPORTE DE MBR"
 tbl[shape=box,label=<
 <table border='0' cellborder='1' cellspacing='0' width='300'  height='200' >
-<tr> <td width='150' bgcolor="pink"><b>Mbr_tamano</b></td><td width='150' bgcolor="pink">3072000</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Mbr_fecha_creacion</b></td><td bgcolor="pink">15/03/2024 03:03:50</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Mbr_dsk_signature</b></td><td bgcolor="pink">79</td>  </tr>
+<tr> <td width='150' bgcolor="pink"><b>Mbr_tamano</b></td><td width='150' bgcolor="pink">52428800</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Mbr_fecha_creacion</b></td><td bgcolor="pink">17/03/2024 02:00:53</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Mbr_dsk_signature</b></td><td bgcolor="pink">60</td>  </tr>
 <tr>  <td bgcolor="pink"><b>Dsk_fit</b></td><td bgcolor="pink">f</td>  </tr><tr><td colspan="2" bgcolor="purple">Particion</td></tr><tr>  <td bgcolor="pink"><b>Part_status</b></td><td bgcolor="pink">1</td>  </tr>
 <tr>  <td bgcolor="pink"><b>Part_type</b></td><td bgcolor="pink">p</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_fit</b></td><td bgcolor="pink">w</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_fit</b></td><td bgcolor="pink">b</td>  </tr>
 <tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">4175</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_size</b></td><td bgcolor="pink">307200</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_name</b></td><td bgcolor="pink">Particion1</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_size</b></td><td bgcolor="pink">5242880</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_name</b></td><td bgcolor="pink">Part31</td>  </tr>
 <tr><td colspan="2" bgcolor="purple">Particion</td></tr><tr>  <td bgcolor="pink"><b>Part_status</b></td><td bgcolor="pink">0</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_type</b></td><td bgcolor="pink">p</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_fit</b></td><td bgcolor="pink">w</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">311375</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_size</b></td><td bgcolor="pink">307200</td>  </tr>
-<tr>  <td bgcolor="pink"><b>Part_name</b></td><td bgcolor="pink">Particion2</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_type</b></td><td bgcolor="pink">e</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_fit</b></td><td bgcolor="pink">b</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">5247055</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_size</b></td><td bgcolor="pink">5242880</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_name</b></td><td bgcolor="pink">Part29</td>  </tr>
+</table>
+>];
+}subgraph cluster_1{
+ label="Particiones Logicas dentro de la extendida"
+tbl_1[shape=box, label=<
+<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
+<tr><td width='150' colspan="2" bgcolor="magenta">Particion</td></tr><tr>  <td width='150' bgcolor="pink"><b>Part_fit</b></td><td width='150' bgcolor="pink">b</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">5247055</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_next</b></td><td bgcolor="pink">6295631</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_size </b></td><td bgcolor="pink">1048576</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_name </b></td><td bgcolor="pink">Part30</td>  </tr>
+<tr><td width='150' colspan="2" bgcolor="magenta">Particion</td></tr><tr>  <td width='150' bgcolor="pink"><b>Part_fit</b></td><td width='150' bgcolor="pink">b</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">6295631</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_next</b></td><td bgcolor="pink">7344207</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_size </b></td><td bgcolor="pink">1048576</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_name </b></td><td bgcolor="pink">Part32</td>  </tr>
+<tr><td width='150' colspan="2" bgcolor="magenta">Particion</td></tr><tr>  <td width='150' bgcolor="pink"><b>Part_fit</b></td><td width='150' bgcolor="pink">b</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_start </b></td><td bgcolor="pink">7344207</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_next</b></td><td bgcolor="pink">8392783</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_size </b></td><td bgcolor="pink">1048576</td>  </tr>
+<tr>  <td bgcolor="pink"><b>Part_name </b></td><td bgcolor="pink">Part33</td>  </tr>
 </table>
 >];
 }}

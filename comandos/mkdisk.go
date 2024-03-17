@@ -78,9 +78,6 @@ func Mkdisk(arre_coman []string) {
 				break
 			}
 
-			val_fit = strings.Replace(val_data, "\"", "", 2)
-			val_fit = strings.ToLower(val_fit)
-
 			if val_fit == "bf" {
 				band_fit = true
 				val_fit = "b"

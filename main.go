@@ -96,6 +96,9 @@ func Ejecutar_comando(arre_coman []string) {
 	} else if data == "mkfs" {
 		/*========================MKFS================== */
 		comandos.Mkfs(arre_coman)
+	} else if data == "login" {
+		/*========================MKFS================== */
+		comandos.Login(arre_coman)
 	} else {
 		/*=======================ERROR=================== */
 		fmt.Println("Error: El comando no fue reconocido.")

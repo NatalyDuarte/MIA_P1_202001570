@@ -3,12 +3,12 @@ subgraph cluster_0{
  label="Bloque Archivo0"
 tbl_0[shape=box, label=<
 <table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
-<tr><td width='150' bgcolor="pink"><b>B_content</b></td><td width='150' bgcolor="pink">15/03/2024 03:03:53</td></tr>
+<tr><td width='150' bgcolor="pink"><b>B_content</b></td><td width='150' bgcolor="pink">15/03/2024 22:04:05</td></tr>
 </table>>];}
 subgraph cluster_1{
  label="Bloque Archivo1"
 tbl_1[shape=box, label=<
 <table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >
-<tr><td width='150' bgcolor="pink"><b>B_content</b></td><td width='150' bgcolor="pink">15/03/2024 03:03:53</td></tr>
+<tr><td width='150' bgcolor="pink"><b>B_content</b></td><td width='150' bgcolor="pink">15/03/2024 22:04:05</td></tr>
 </table>>];}
 }

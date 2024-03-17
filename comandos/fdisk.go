@@ -341,6 +341,7 @@ func Mostrarebr(ruta string, part_start int) estructuras.Ebr {
 }
 
 func crear_particion_primaria(direccion string, nombre string, size int, fit string, unit string) {
+	fmt.Println("Creando Particion Primaria")
 	aux_unit := ""
 	aux_path := direccion
 	size_bytes := 1024
@@ -419,9 +420,7 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 				if err2 != nil {
 					Mens_error(err)
 				}
-
 				espacio_disponible := i_tamaño_disco - espacio_usado
-
 				if espacio_disponible >= size_bytes {
 					s_dsk_fit := string(master_boot_record.Dsk_fit[:])
 					s_dsk_fit = strings.Trim(s_dsk_fit, "\x00")
@@ -634,6 +633,8 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 
 						fmt.Println("La Particion primaria fue creada exitosamente")
 					}
+				} else {
+					fmt.Println("Error: No hay espacio suficiente para crear la particion")
 				}
 
 				if err != nil {
@@ -646,11 +647,15 @@ func crear_particion_primaria(direccion string, nombre string, size int, fit str
 		} else {
 			fmt.Println("Error: El disco se encuentra vacio")
 		}
+		defer func() {
+			f.Close()
+		}()
 		f.Close()
 	}
 }
 
 func crear_particion_extendida(direccion string, nombre string, size int, fit string, unit string) {
+	fmt.Println("Creando Particion Extendida")
 	aux_fit := ""
 	aux_unit := ""
 	size_bytes := 1024
@@ -1038,11 +1043,15 @@ func crear_particion_extendida(direccion string, nombre string, size int, fit st
 		} else {
 			fmt.Println("Error: el disco se encuentra vacio")
 		}
+		defer func() {
+			f.Close()
+		}()
 		f.Close()
 	}
 }
 
 func crear_particion_logixa(direccion string, nombre string, size int, fit string, unit string) {
+	fmt.Println("Creando Particion Logica")
 	aux_fit := ""
 	aux_unit := ""
 	size_bytes := 1024
@@ -1211,7 +1220,9 @@ func crear_particion_logixa(direccion string, nombre string, size int, fit strin
 		} else {
 			fmt.Println("No se puede crear la extension logica porque no existe particion extendida")
 		}
-
+		defer func() {
+			f.Close()
+		}()
 	}
 }
 

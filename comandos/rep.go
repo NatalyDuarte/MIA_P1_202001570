@@ -948,7 +948,7 @@ func ReporteBloque(path string, id string) {
 					buffer += "<tr><td width='150' bgcolor=\"pink\"><b>B_content" + "</b></td><td width='150' bgcolor=\"pink\">" + s_block_cont + "</td></tr>\n"
 					buffer += "</table>>];}\n"
 				case estructuras.Bloque_carpeta:
-					buffer += "subgraph cluster_" + strconv.Itoa(c) + "{\n label=\"Bloque Archivo" + strconv.Itoa(c) + "\"\ntbl_" + strconv.Itoa(c) + "[shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
+					buffer += "subgraph cluster_" + strconv.Itoa(c) + "{\n label=\"Bloque Carpeta" + strconv.Itoa(c) + "\"\ntbl_" + strconv.Itoa(c) + "[shape=box, label=<\n<table border='0' cellborder='1' cellspacing='0'  width='300' height='160' >\n"
 					for _, c := range b.B_content {
 						s_block_name := string(c.B_name[:])
 						s_block_name = strings.Trim(s_block_name, "\x00")
@@ -1170,6 +1170,9 @@ func ReporteBmInode(path string, id string) {
 			fmt.Println("Reporte de Bitmap Inodo creado exitosamente")
 		}
 	}
+	defer func() {
+		disco.Close()
+	}()
 }
 
 func ReporteBmBlock(path string, id string) {
@@ -1312,6 +1315,9 @@ func ReporteBmBlock(path string, id string) {
 			fmt.Println("Reporte de Bitmap Bloques creado exitosamente")
 		}
 	}
+	defer func() {
+		disco.Close()
+	}()
 }
 
 func ReporteTree(path string, id string) {
@@ -1390,7 +1396,7 @@ func ReporteTree(path string, id string) {
 		err = binary.Read(disco, binary.BigEndian, &sb)
 		if sb.S_filesystem_type != empty {
 			buffer += "digraph grafica{\nrankdir=TB;\nnode [shape = record, style=filled, fillcolor=seashell2];\n"
-			buffer += "subgraph cluster_s {\n label=\"Blocks\"\ntbl_s [shape=box, label=<\n"
+			buffer += "subgraph cluster_s {\n label=\"\"\ntbl_s [shape=box, label=<\n"
 			s_inodo_start := string(sb.S_inode_start[:])
 			s_inodo_start = strings.Trim(s_inodo_start, "\x00")
 			part_starta, err := strconv.Atoi(s_inodo_start)
@@ -1420,6 +1426,40 @@ func ReporteTree(path string, id string) {
 			}
 			buffer += etiquetaInicio + celdas + etiquetaFinal
 			buffer += ">];}\n"
+			numBloque := 0
+			for c, _ := range inodo.I_block {
+				if c != -1 {
+					numBloque = c - 1
+					s_block_siz := string(sb.S_block_size[:])
+					s_block_siz = strings.Trim(s_block_siz, "\x00")
+					block_size, err := strconv.Atoi(s_block_siz)
+					if err != nil {
+						Mens_error(err)
+					}
+					inicioBloques := numBloque * block_size
+					blocks, tipo := leerBloques(int64(inicioBloques), val_rutadis)
+					fmt.Println(tipo)
+					switch b := blocks.(type) {
+					case estructuras.Bloque_archivo:
+						fmt.Println("bloque archivo")
+					case estructuras.Bloque_carpeta:
+						buffer += "subgraph cluster_" + strconv.Itoa(c) + "{\n label=\"Bloque Carpeta" + strconv.Itoa(c) + "\"\ntbl_" + strconv.Itoa(c) + "[shape=box, label=<\n"
+						celdas := "<TR><TD bgcolor=\"pink\">Bloque 1</TD><TD bgcolor=\"pink\"></TD></TR>"
+						for _, c := range b.B_content {
+							s_block_name := string(c.B_name[:])
+							s_block_name = strings.Trim(s_block_name, "\x00")
+							s_block_inodo := string(c.B_inodo[:])
+							s_block_inodo = strings.Trim(s_block_inodo, "\x00")
+							celdas += "<TR><TD >" + s_block_name + "</TD><TD >" + s_block_inodo + "</TD></TR>"
+						}
+						buffer += "<" + etiquetaInicio + celdas + etiquetaFinal + ">"
+						buffer += ">];}\n"
+					default:
+						fmt.Println("Tipo desconocido")
+					}
+				}
+			}
+
 			buffer += "}\n"
 			file, err2 := os.Create("Tree.dot")
 			if err2 != nil && !os.IsExist(err) {
@@ -1441,8 +1481,12 @@ func ReporteTree(path string, id string) {
 			if err != nil {
 				fmt.Errorf("no se pudo generar la imagen: %v", err)
 			}
+
 			val_rutadis = "/home/nataly/Documentos/Mia lab/Proyecto1/MIA_P1_202001570/Discos/MIA/P1/"
 			fmt.Println("Reporte de Arbol creado exitosamente")
 		}
 	}
+	defer func() {
+		disco.Close()
+	}()
 }
